@@ -26,6 +26,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(34,197,94,.35);border-radius:999px}
+::-webkit-scrollbar-thumb:hover{background:rgba(34,197,94,.6)}
+* {scrollbar-width:thin;scrollbar-color:rgba(34,197,94,.35) transparent}
 body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;-webkit-font-smoothing:antialiased}
 :root{--g:#22c55e;--gd:#16a34a;--gb:rgba(34,197,94,.08);--a:#f59e0b;--r:#ef4444;--p:#8b5cf6;--b:#3b82f6;--card:#161616;--brd:#222;--gr:#555;--lt:#999}
 
@@ -497,7 +502,22 @@ tbody tr:hover td{background:#1a1a1a}
           <option value="">Todas prioridades</option><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option>
         </select>
       </div>
-      <div id="crm-table-wrap" class="tbox"><div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Negócio</th><th>Telefone</th><th>Etapa</th><th>Prioridade</th><th>Follow-up</th><th>Valor</th><th></th></tr></thead><tbody id="crm-tbody"></tbody></table></div></div>
+      <div id="crm-sel-bar" style="display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span id="crm-sel-count" style="font-size:.82rem;font-weight:600;color:#22c55e">0 selecionados</span>
+        <select id="crm-sel-etapa" style="padding:5px 10px;background:#0d0d0d;border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-family:'Inter',sans-serif;font-size:.78rem;outline:none">
+          <option value="">Mover para etapa...</option>
+          <option value="contato">Contato</option>
+          <option value="interesse">Interesse</option>
+          <option value="demo">Demo enviada</option>
+          <option value="negociacao">Negociação</option>
+          <option value="fechado">Fechado</option>
+          <option value="perdido">Perdido</option>
+        </select>
+        <button onclick="crmMoverEtapa()" style="padding:5px 12px;border-radius:6px;background:#22c55e;border:none;color:#fff;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;font-weight:600">Mover</button>
+        <button onclick="crmExcluirSelecionados()" style="padding:5px 12px;border-radius:6px;background:transparent;border:1px solid rgba(239,68,68,.3);color:#ef4444;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer">Excluir</button>
+        <button onclick="crmLimparSel()" style="padding:5px 12px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#666;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer">Cancelar</button>
+      </div>
+      <div id="crm-table-wrap" class="tbox"><div class="tbl-wrap"><table><thead><tr><th style="width:36px"><input type="checkbox" id="crm-check-all" style="accent-color:#22c55e;cursor:pointer" onchange="crmToggleAll(this.checked)" title="Selecionar todos"/></th><th>Nome</th><th>Negócio</th><th>Telefone</th><th>Etapa</th><th>Prioridade</th><th>Follow-up</th><th>Valor</th><th></th></tr></thead><tbody id="crm-tbody"></tbody></table></div></div>
     </div>
   </div>
 </div>
@@ -1384,7 +1404,7 @@ function renderTabelaCRM(){
     ml.innerHTML=lista.length?lista.map(l=>'<div onclick="openLead(\''+l.id+'\')" style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--brd);cursor:pointer;gap:12px"><div style="width:38px;height:38px;border-radius:50%;background:#1a1a1a;border:2px solid '+(eC[l.etapa]||'#333')+';display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;flex-shrink:0">'+l.nome.charAt(0).toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+l.nome+'</div><div style="font-size:.75rem;color:var(--gr);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">'+(l.negocio||l.categoria||l.telefone||'—')+'</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0"><span style="font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:999px;background:'+(eC[l.etapa]||'#333')+'22;color:'+(eC[l.etapa]||'#999')+'">'+eL[l.etapa]+'</span><span style="width:7px;height:7px;border-radius:50%;background:'+(pC[l.prioridade]||'#555')+';display:inline-block"></span></div></div>').join(''):'<p style="text-align:center;color:var(--gr);padding:24px;font-size:.85rem">Nenhum lead</p>';
   } else {
     tw.style.display='block';ml.style.display='none';
-    document.getElementById('crm-tbody').innerHTML=lista.length?lista.map(l=>'<tr onclick="openLead(\''+l.id+'\')" style="cursor:pointer"><td style="font-weight:500">'+l.nome+'</td><td style="color:var(--gr)">'+(l.negocio||'—')+'</td><td><a href="https://wa.me/55'+l.telefone.replace(/\D/g,'')+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);font-size:.8rem">'+l.telefone+'</a></td><td><span style="font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;background:'+(eC[l.etapa]||'#333')+'22;color:'+(eC[l.etapa]||'#999')+'">'+eL[l.etapa]+'</span></td><td><span style="font-size:.78rem;color:'+(pC[l.prioridade])+'">'+l.prioridade+'</span></td><td style="color:var(--gr)">'+(l.proximo_followup?new Date(l.proximo_followup).toLocaleDateString('pt-BR'):'—')+'</td><td style="color:var(--g)">'+(l.valor_estimado?fmt(l.valor_estimado):'—')+'</td><td><button class="it-btn" onclick="event.stopPropagation();openLead(\''+l.id+'\')">✏</button></td></tr>').join(''):'<tr><td colspan="8" style="text-align:center;color:var(--gr);padding:20px">Nenhum lead</td></tr>';
+    document.getElementById('crm-tbody').innerHTML=lista.length?lista.map(l=>'<tr onclick="openLead(\''+l.id+'\')" style="cursor:pointer;'+(crmSelectedIds.has(l.id)?'background:rgba(34,197,94,.05)':'')+'"><td onclick="event.stopPropagation()"><input type="checkbox" style="accent-color:#22c55e;cursor:pointer" '+(crmSelectedIds.has(l.id)?'checked':'')+' onchange="crmToggleSel(\''+l.id+'\',this.checked)"/></td><td style="font-weight:500">'+l.nome+'</td><td style="color:var(--gr)">'+(l.negocio||'—')+'</td><td><a href="https://wa.me/55'+l.telefone.replace(/\D/g,'')+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);font-size:.8rem">'+l.telefone+'</a></td><td><span style="font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;background:'+(eC[l.etapa]||'#333')+'22;color:'+(eC[l.etapa]||'#999')+'">'+eL[l.etapa]+'</span></td><td><span style="font-size:.78rem;color:'+(pC[l.prioridade])+'">'+l.prioridade+'</span></td><td style="color:var(--gr)">'+(l.proximo_followup?new Date(l.proximo_followup).toLocaleDateString('pt-BR'):'—')+'</td><td style="color:var(--g)">'+(l.valor_estimado?fmt(l.valor_estimado):'—')+'</td><td><button class="it-btn" onclick="event.stopPropagation();openLead(\''+l.id+'\')">✏</button></td></tr>').join(''):'<tr><td colspan="8" style="text-align:center;color:var(--gr);padding:20px">Nenhum lead</td></tr>';
   }
 }
 function setCrmTab(tab){crmTab=tab;document.getElementById('tab-kanban').classList.toggle('active',tab==='kanban');document.getElementById('tab-tabela').classList.toggle('active',tab==='tabela');document.getElementById('crm-kanban').style.display=tab==='kanban'?'block':'none';document.getElementById('crm-tabela').style.display=tab==='tabela'?'block':'none';if(tab==='tabela')renderTabelaCRM();else renderKanban();}
@@ -1909,6 +1929,79 @@ if ('serviceWorker' in navigator) {
       .then(() => console.log('SW registrado'))
       .catch(e => console.log('SW erro:', e));
   });
+}
+
+// ── CRM SELEÇÃO MÚLTIPLA ──
+let crmSelectedIds = new Set();
+
+function crmToggleAll(checked) {
+  const search=(document.getElementById('crm-search')?.value||'').toLowerCase();
+  const fE=document.getElementById('crm-f-etapa')?.value||'';
+  const fP=document.getElementById('crm-f-pri')?.value||'';
+  let lista=leads.slice();
+  if(search)lista=lista.filter(l=>(l.nome+l.negocio+l.telefone).toLowerCase().includes(search));
+  if(fE)lista=lista.filter(l=>l.etapa===fE);
+  if(fP)lista=lista.filter(l=>l.prioridade===fP);
+  lista.forEach(l => { checked ? crmSelectedIds.add(l.id) : crmSelectedIds.delete(l.id); });
+  crmUpdateSelBar();
+  renderTabelaCRM();
+}
+
+function crmToggleSel(id, checked) {
+  checked ? crmSelectedIds.add(id) : crmSelectedIds.delete(id);
+  crmUpdateSelBar();
+}
+
+function crmUpdateSelBar() {
+  const bar = document.getElementById('crm-sel-bar');
+  const count = document.getElementById('crm-sel-count');
+  if(!bar) return;
+  const show = crmSelectedIds.size > 0;
+  bar.style.display = show ? 'flex' : 'none';
+  if(count) count.textContent = `${crmSelectedIds.size} selecionado${crmSelectedIds.size !== 1 ? 's' : ''}`;
+}
+
+function crmLimparSel() {
+  crmSelectedIds.clear();
+  crmUpdateSelBar();
+  const ca = document.getElementById('crm-check-all');
+  if(ca) ca.checked = false;
+  renderTabelaCRM();
+}
+
+async function crmMoverEtapa() {
+  const etapa = document.getElementById('crm-sel-etapa')?.value;
+  if(!etapa) { toast('Escolha uma etapa','err'); return; }
+  const ids = [...crmSelectedIds];
+  let ok = 0;
+  for(const id of ids) {
+    const l = leads.find(x => x.id === id);
+    if(!l) continue;
+    l.etapa = etapa;
+    try {
+      await sb.from('leads').update({etapa, updated_at: new Date().toISOString()}).eq('id', id).eq('user_id', currentUser.id);
+      ok++;
+    } catch(e) {}
+  }
+  crmLimparSel();
+  renderCRM();
+  toast(`${ok} leads movidos para ${etapa} ✓`, 'ok');
+}
+
+async function crmExcluirSelecionados() {
+  const ids = [...crmSelectedIds];
+  if(!ids.length) return;
+  if(!confirm(`Excluir ${ids.length} lead${ids.length !== 1 ? 's' : ''}? Esta ação não pode ser desfeita.`)) return;
+  for(const id of ids) {
+    try {
+      await sb.from('conversas').delete().eq('lead_id', id);
+      await sb.from('leads').delete().eq('id', id).eq('user_id', currentUser.id);
+    } catch(e) {}
+  }
+  leads = leads.filter(l => !ids.has(l.id));
+  crmLimparSel();
+  renderCRM();
+  toast(`${ids.length} removidos ✓`, 'ok');
 }
 
 async function salvarNomeInicial(){

@@ -1480,34 +1480,20 @@ async function deleteLead(){
   if(!currentLeadId)return;
   const idParaDeletar=currentLeadId;
   if(!confirm('Remover este lead permanentemente? Esta ação não pode ser desfeita.'))return;
+  // ── Remove da interface IMEDIATAMENTE (não depende do Supabase) ──
+  leads=leads.filter(l=>l.id!==idParaDeletar);
+  closeDrawer();
+  renderCRM();
+  toast('Lead removido ✓','ok');
+  // ── Sincroniza com Supabase em background ──
   showSaving();
   try{
-    const lead=leads.find(l=>l.id===idParaDeletar);
-    const nome=lead?.nome||'';
-    await sbRun(()=>sb.from('conversas').delete().eq('lead_id',idParaDeletar),'delConversas');
-    if(nome){
-      const txVinculadas=fin.filter(t=>
-        (t.cli&&t.cli.toLowerCase()===nome.toLowerCase())||
-        (t.obs&&t.obs.includes('lead:'+idParaDeletar))
-      );
-      for(const tx of txVinculadas){
-        await sbRun(()=>sb.from('financeiro').delete().eq('id',tx.id).eq('user_id',currentUser.id),'delFin');
-      }
-      fin=fin.filter(t=>
-        !(t.cli&&t.cli.toLowerCase()===nome.toLowerCase())&&
-        !(t.obs&&t.obs.includes('lead:'+idParaDeletar))
-      );
-    }
-    const {error}=await sbRun(()=>sb.from('leads').delete().eq('id',idParaDeletar).eq('user_id',currentUser.id),'delLead');
-    if(error)throw error;
-    leads=leads.filter(l=>l.id!==idParaDeletar);
-    closeDrawer();
-    renderCRM();
-    const p=document.querySelector('.page.active')?.id;
-    if(p==='page-fin')renderFin();else renderDash();
-    toast('Lead removido ✓','ok');
-  }catch(e){toast('Erro ao remover: '+e.message,'err');console.error(e);}
-  finally{hideSaving()}
+    await sb.from('conversas').delete().eq('lead_id',idParaDeletar);
+    await sb.from('leads').delete().eq('id',idParaDeletar).eq('user_id',currentUser.id);
+  }catch(e){
+    console.error('Erro ao remover do Supabase:',e.message);
+    // Não mostra erro pro usuário — já foi removido da tela
+  }finally{hideSaving()}
 }
 function openWA(){const tel=document.getElementById('ld-tel').value.replace(/\D/g,'');if(!tel){toast('Adicione um telefone','err');return}window.open('https://wa.me/55'+tel+'?text=Oi '+document.getElementById('ld-nome').value+'!','_blank');}
 
@@ -2004,16 +1990,18 @@ async function crmExcluirSelecionados() {
   const ids = [...crmSelectedIds];
   if(!ids.length) return;
   if(!confirm(`Excluir ${ids.length} lead${ids.length !== 1 ? 's' : ''}? Esta ação não pode ser desfeita.`)) return;
+  // Remove da interface IMEDIATAMENTE
+  leads = leads.filter(l => !ids.includes(l.id));
+  crmLimparSel();
+  renderCRM();
+  toast(`${ids.length} removido${ids.length!==1?'s':''} ✓`, 'ok');
+  // Sincroniza com Supabase em background
   for(const id of ids) {
     try {
       await sb.from('conversas').delete().eq('lead_id', id);
       await sb.from('leads').delete().eq('id', id).eq('user_id', currentUser.id);
-    } catch(e) {}
+    } catch(e) { console.error('Erro ao remover lead '+id, e.message); }
   }
-  leads = leads.filter(l => !ids.includes(l.id));
-  crmLimparSel();
-  renderCRM();
-  toast(`${ids.length} removidos ✓`, 'ok');
 }
 
 async function salvarNomeInicial(){

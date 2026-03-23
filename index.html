@@ -401,7 +401,7 @@ tbody tr:hover td{background:#1a1a1a}
 
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo"><img src="logo.png" alt="Sano Lab" style="height:36px;width:auto;display:block;margin:0 auto 6px"/></div>
+    <div class="login-logo"><img src="logo.png" alt="Sano Lab" style="height:48px;width:auto;display:block;margin:0 auto 8px"/></div>
     <div class="login-tagline">Command Center — Acesso restrito</div>
     <h2>Entrar na sua conta</h2>
     <div class="lfg"><label>Email</label><input class="li" id="l-email" type="email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
@@ -420,7 +420,7 @@ tbody tr:hover td{background:#1a1a1a}
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sb-logo"><img src="logo.png" alt="Sano Lab" style="height:32px;width:auto;display:block;margin-bottom:4px"/><div class="sub" style="font-size:.68rem;color:var(--gr)">Advanced CRM</div></div>
+  <div class="sb-logo"><img src="logo.png" alt="Sano Lab" style="height:44px;width:auto;display:block;margin-bottom:6px"/><div class="sub" style="font-size:.68rem;color:var(--gr)">Advanced CRM</div></div>
   <div class="sb-sec">
     <div class="sb-label">Páginas</div>
     <div class="sb-item active" id="nav-dash" onclick="goPage('dash')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</div>
@@ -451,24 +451,13 @@ tbody tr:hover td{background:#1a1a1a}
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dash">
-  <div class="topbar"><h1>Dashboard</h1><div class="tbar-right"><span id="dash-date" style="font-size:.78rem;color:var(--gr)"></span><button class="btn btn-gh" style="font-size:.78rem;padding:5px 11px" onclick="openMeta()">✎ Meta</button></div></div>
+  <div class="topbar"><h1>Dashboard</h1><div class="tbar-right"><span id="dash-date" style="font-size:.78rem;color:var(--gr)"></span><select id="dash-mes" onchange="renderDash()" style="padding:5px 10px;font-size:.78rem;background:#0d0d0d;border:1px solid var(--brd);border-radius:6px;color:#fff;outline:none;cursor:pointer"><option value="">Todos os meses</option></select></div></div>
   <div class="content">
     <!-- ALERTAS FOLLOW-UP -->
     <div id="fu-banner-wrap"></div>
     <!-- KPIs financeiro -->
     <div class="sec-lbl">Financeiro</div>
     <div class="kpi-grid" id="dash-kpis" style="--cols:5"></div>
-    <!-- Meta com toggle semanal/mensal -->
-    <div class="meta-box">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <strong style="font-size:.88rem" id="meta-titulo">Meta mensal</strong>
-        <div style="display:flex;gap:2px;background:#0d0d0d;border:1px solid var(--brd);border-radius:7px;padding:2px">
-          <button id="mt-mensal" onclick="setMetaTab('mensal')" style="padding:3px 10px;border-radius:5px;border:none;background:var(--card);color:#fff;font-family:'Inter',sans-serif;font-size:.72rem;cursor:pointer;font-weight:500">Mensal</button>
-          <button id="mt-semanal" onclick="setMetaTab('semanal')" style="padding:3px 10px;border-radius:5px;border:none;background:transparent;color:var(--gr);font-family:'Inter',sans-serif;font-size:.72rem;cursor:pointer">Semanal</button>
-        </div>
-      </div>
-      <div id="dash-meta-tab"></div>
-    </div>
     <div class="chart-row">
       <div class="chart-box"><h3>Receita mensal</h3><div class="chart-wrap"><canvas id="c-rec"></canvas></div></div>
       <div class="chart-box"><h3>Despesas por categoria</h3><div class="chart-wrap"><canvas id="c-gas"></canvas></div></div>
@@ -518,7 +507,7 @@ tbody tr:hover td{background:#1a1a1a}
   <div class="topbar"><h1>Financeiro</h1><div class="tbar-right"><button class="btn btn-r" onclick="openFin('saida')">− Despesa</button><button class="btn btn-g" onclick="openFin('entrada')">+ Receita</button></div></div>
   <div class="content">
     <div class="kpi-grid" id="fin-kpis" style="--cols:5"></div>
-    <div class="meta-box" id="fin-meta"></div>
+
     <div class="chart-row">
       <div class="chart-box"><h3>Receita vs Despesa</h3><div class="chart-wrap"><canvas id="c-men"></canvas></div></div>
       <div class="chart-box"><h3>Categorias</h3><div class="chart-wrap"><canvas id="c-cat"></canvas></div></div>
@@ -1042,9 +1031,28 @@ function mRec(){return Array.from({length:12},(_,i)=>{const m=String(i+1).padSta
 function gastosData(){const c={};fin.filter(t=>t.tipo==='saida').forEach(t=>{c[t.cat]=(c[t.cat]||0)+Number(t.val)});return Object.keys(c).length?{labels:Object.keys(c),vals:Object.values(c)}:{labels:['Sem despesas'],vals:[0]}}
 
 // RENDER
+function popularMesDash(){
+  const sel=document.getElementById('dash-mes');if(!sel)return;
+  const cur=sel.value;
+  const meses=[...new Set(fin.map(t=>t.data?t.data.substring(0,7):null).filter(Boolean))].sort().reverse();
+  sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}">${MESES[parseInt(mo)-1]} ${y}</option>`;}).join('');
+  sel.value=cur||meses[0]||'';
+}
+function calcFinFiltrado(){
+  const mes=document.getElementById('dash-mes')?.value||'';
+  const ff=mes?fin.filter(t=>t.data&&t.data.startsWith(mes)):fin;
+  const rec=ff.filter(t=>t.tipo==='entrada'&&t.st==='recebido').reduce((a,t)=>a+Number(t.val),0);
+  const pend=ff.filter(t=>t.tipo==='entrada'&&t.st==='pendente').reduce((a,t)=>a+Number(t.val),0);
+  const sai=ff.filter(t=>t.tipo==='saida').reduce((a,t)=>a+Number(t.val),0);
+  const clis=new Set(ff.filter(t=>t.tipo==='entrada'&&t.st==='recebido'&&t.cli).map(t=>t.cli)).size;
+  return{rec,pend,sai,lucro:rec-sai,clis};
+}
 function renderDash(){
-  const f=calcFin(),m=calcMapa();
-  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  popularMesDash();
+  const f=calcFinFiltrado(),m=calcMapa();
+  const mes=document.getElementById('dash-mes')?.value||'';
+  const mesLabel=mes?(()=>{const[y,mo]=mes.split('-');return MESES[parseInt(mo)-1]+' '+y;})():'Todo período';
+  document.getElementById('dash-date').textContent=mesLabel;
   document.getElementById('dash-kpis').innerHTML=kpi('Receita',fmt(f.rec),'c-g','recebida')+kpi('A receber',fmt(f.pend),'c-a','pendente')+kpi('Despesas',fmt(f.sai),'c-r','total')+kpi('Lucro',fmt(f.lucro),f.lucro>=0?'c-g':'c-r',f.lucro>=0?'positivo':'negativo')+kpi('Clientes',f.clis,'c-p','pagos');
   document.getElementById('dash-mapa').innerHTML=kpi('Feito',m.ok,'c-g',Math.round(m.ok/m.total*100)+'%')+kpi('Em andamento',m.doing,'c-a','progresso')+kpi('Faltando',m.nope,'c-r','para fazer')+kpi('Futuro',m.future,'c-p','planejado');
   const ult=fin.slice(0,5);
@@ -1053,7 +1061,6 @@ function renderDash(){
   rDoughnut('c-gas',gastosData());
   renderFollowUps();
   renderProsp();
-  renderMetaTab();
   agendarNotifDiaria();
 }
 function renderFin(){
@@ -1076,7 +1083,7 @@ function renderFin(){
     kpi('Ticket',clis?fmt(rec/clis):fmt(0),'c-b','médio');
 
   // Meta do período
-  document.getElementById('fin-meta').innerHTML=metaHtml(rec);
+
 
   // Label do período
   let periodoEl=document.getElementById('fin-periodo-lbl');
@@ -1724,7 +1731,6 @@ function setMetaTab(tab){
   if(bm){bm.style.background=tab==='mensal'?'var(--card)':'transparent';bm.style.color=tab==='mensal'?'#fff':'var(--gr)';}
   if(bs){bs.style.background=tab==='semanal'?'var(--card)':'transparent';bs.style.color=tab==='semanal'?'#fff':'var(--gr)';}
   if(titulo)titulo.textContent=tab==='mensal'?'Meta mensal':'Meta semanal';
-  renderMetaTab();
 }
 function renderMetaTab(){
   const el=document.getElementById('dash-meta-tab');if(!el)return;

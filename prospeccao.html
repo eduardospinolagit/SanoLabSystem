@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Prospecção — Sano Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:#0f0f0f;color:#f0f0f0;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+:root{--g:#22c55e;--g2:#16a34a;--bg:#0f0f0f;--card:#161616;--brd:rgba(255,255,255,.08);--gr:#666;--gr2:#999;--red:#ef4444}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#111;border-bottom:1px solid var(--brd);position:sticky;top:0;z-index:50;gap:12px;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.back-btn{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:7px;border:1px solid var(--brd);background:transparent;color:var(--gr2);font-size:.8rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;text-decoration:none}
+.back-btn:hover{border-color:rgba(255,255,255,.2);color:#f0f0f0}
+.topbar h1{font-size:1rem;font-weight:700;color:#f0f0f0}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ── BOTÕES ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;font-size:.8rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;border:none;white-space:nowrap}
+.btn-g{background:var(--g);color:#fff}.btn-g:hover{background:var(--g2)}
+.btn-gh{background:transparent;border:1px solid var(--brd);color:var(--gr2)}.btn-gh:hover{border-color:rgba(255,255,255,.2);color:#f0f0f0}
+.btn-red{background:transparent;border:1px solid rgba(239,68,68,.3);color:var(--red)}.btn-red:hover{background:rgba(239,68,68,.1)}
+
+/* ── STATS ── */
+.stats-bar{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid var(--brd);flex-wrap:wrap;background:#111}
+.stat{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:10px 16px;min-width:100px;text-align:center}
+.stat-n{font-size:1.4rem;font-weight:700;color:var(--g);line-height:1}
+.stat-l{font-size:.68rem;color:var(--gr);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── FILTROS ── */
+.filters{display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:1px solid var(--brd);flex-wrap:wrap;background:#0f0f0f}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--gr);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.search-wrap input{width:100%;padding:8px 12px 8px 32px;background:var(--card);border:1px solid var(--brd);border-radius:7px;color:#f0f0f0;font-family:'Inter',sans-serif;font-size:.83rem;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:rgba(34,197,94,.4)}
+.search-wrap input::placeholder{color:var(--gr)}
+.filter-select{padding:8px 12px;background:var(--card);border:1px solid var(--brd);border-radius:7px;color:#f0f0f0;font-family:'Inter',sans-serif;font-size:.8rem;outline:none;cursor:pointer}
+.filter-select:focus{border-color:rgba(34,197,94,.4)}
+
+/* ── TABELA ── */
+.tbl-container{padding:16px 20px;overflow-x:auto}
+.tbl-wrap{border:1px solid var(--brd);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead tr{background:#161616;border-bottom:1px solid var(--brd)}
+thead th{padding:11px 14px;text-align:left;font-size:.7rem;font-weight:600;color:var(--gr);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+thead th.sortable{cursor:pointer;user-select:none;transition:color .2s}
+thead th.sortable:hover{color:#f0f0f0}
+thead th.sort-asc::after{content:' ↑'}
+thead th.sort-desc::after{content:' ↓'}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+tbody tr.contatado{opacity:.45}
+tbody td{padding:11px 14px;vertical-align:middle}
+
+/* células especiais */
+.td-num{font-size:.88rem;font-weight:600;color:#f0f0f0;font-variant-numeric:tabular-nums;cursor:pointer;display:flex;align-items:center;gap:6px}
+.td-num:hover .copy-hint{opacity:1}
+.copy-hint{font-size:.65rem;color:var(--g);opacity:0;transition:opacity .2s}
+.td-nome{font-weight:600;color:#f0f0f0;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.td-nome:hover{color:var(--g)}
+.td-cat{font-size:.75rem;color:var(--gr2)}
+.td-cidade{font-size:.78rem;color:var(--gr2)}
+.td-site{font-size:.75rem}
+.td-site a{color:var(--g);text-decoration:none;white-space:nowrap;overflow:hidden;display:block;max-width:120px;text-overflow:ellipsis}
+.td-site a:hover{text-decoration:underline}
+.td-site .sem-site{color:var(--gr)}
+.td-status{white-space:nowrap}
+
+/* badge status */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:.68rem;font-weight:600;white-space:nowrap}
+.badge-pend{background:rgba(255,255,255,.06);color:var(--gr2);border:1px solid rgba(255,255,255,.08)}
+.badge-cont{background:rgba(34,197,94,.1);color:var(--g);border:1px solid rgba(34,197,94,.2)}
+.badge-resp{background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.badge-sem{background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.15)}
+
+/* botão entrei em contato */
+.btn-contact{padding:5px 11px;border-radius:6px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.06);color:var(--g);white-space:nowrap}
+.btn-contact:hover{background:rgba(34,197,94,.15);border-color:var(--g)}
+.btn-contact.done{border-color:rgba(255,255,255,.08);background:transparent;color:var(--gr);cursor:default}
+.btn-contact.done:hover{background:transparent;border-color:rgba(255,255,255,.08);color:var(--gr)}
+
+/* ── IMPORT ZONE ── */
+.import-zone{margin:20px;border:2px dashed var(--brd);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.import-zone:hover,.import-zone.drag{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.03)}
+.import-zone svg{width:40px;height:40px;stroke:var(--gr);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 12px}
+.import-zone p{font-size:.9rem;color:var(--gr2);margin-bottom:6px}
+.import-zone span{font-size:.78rem;color:var(--gr)}
+.import-zone strong{color:var(--g)}
+#file-input{display:none}
+
+/* ── COLUMN MAP ── */
+.col-map{margin:0 20px 20px;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:20px}
+.col-map h3{font-size:.88rem;font-weight:700;margin-bottom:4px}
+.col-map p{font-size:.78rem;color:var(--gr);margin-bottom:16px}
+.col-map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.col-field{display:flex;flex-direction:column;gap:5px}
+.col-field label{font-size:.72rem;color:var(--gr2);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.col-field select{padding:7px 10px;background:#0f0f0f;border:1px solid var(--brd);border-radius:6px;color:#f0f0f0;font-family:'Inter',sans-serif;font-size:.82rem;outline:none}
+.col-field select:focus{border-color:rgba(34,197,94,.4)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 20px;color:var(--gr)}
+.empty svg{width:40px;height:40px;stroke:var(--gr);fill:none;stroke-width:1.5;margin:0 auto 12px;display:block}
+.empty p{font-size:.9rem;margin-bottom:4px;color:var(--gr2)}
+.empty span{font-size:.78rem}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-size:.82rem;font-weight:500;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;z-index:999;max-width:280px}
+.toast.show{opacity:1;transform:none}
+.toast.ok{background:var(--g);color:#fff}
+.toast.err{background:var(--red);color:#fff}
+.toast.info{background:#3b82f6;color:#fff}
+
+/* ── PAGINAÇÃO ── */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 20px;flex-wrap:wrap;gap:8px}
+.pag-info{font-size:.78rem;color:var(--gr)}
+.pag-btns{display:flex;gap:4px}
+.pag-btn{padding:5px 10px;border-radius:5px;border:1px solid var(--brd);background:transparent;color:var(--gr2);font-size:.78rem;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.pag-btn:hover:not(:disabled){border-color:rgba(255,255,255,.2);color:#f0f0f0}
+.pag-btn.active{background:var(--g);border-color:var(--g);color:#fff}
+.pag-btn:disabled{opacity:.3;cursor:default}
+
+/* ── PROGRESS ── */
+.progress-bar{height:3px;background:rgba(34,197,94,.15);border-radius:999px;overflow:hidden;margin:0 20px}
+.progress-fill{height:100%;background:var(--g);border-radius:999px;transition:width .3s}
+
+@media(max-width:640px){
+  .topbar{padding:10px 12px}
+  .stats-bar,.filters,.tbl-container,.pagination{padding-left:12px;padding-right:12px}
+  .import-zone,.col-map{margin-left:12px;margin-right:12px}
+  .progress-bar{margin:0 12px}
+  thead th:nth-child(4),tbody td:nth-child(4),
+  thead th:nth-child(5),tbody td:nth-child(5){display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="index.html" class="back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      CRM
+    </a>
+    <h1>Prospecção</h1>
+  </div>
+  <div class="topbar-right">
+    <span id="user-label" style="font-size:.75rem;color:var(--gr)"></span>
+    <button class="btn btn-gh" onclick="document.getElementById('file-input').click()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importar CSV
+    </button>
+    <button class="btn btn-red" onclick="confirmarLimpar()" id="btn-limpar" style="display:none">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      Limpar lista
+    </button>
+    <input type="file" id="file-input" accept=".csv" onchange="handleFile(this.files[0])"/>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar" id="stats-bar" style="display:none">
+  <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">Total</div></div>
+  <div class="stat"><div class="stat-n" id="s-pend" style="color:var(--gr2)">0</div><div class="stat-l">Pendentes</div></div>
+  <div class="stat"><div class="stat-n" id="s-cont">0</div><div class="stat-l">Contatados</div></div>
+  <div class="stat"><div class="stat-n" id="s-sem" style="color:#f87171">0</div><div class="stat-l">Sem site</div></div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar" id="progress-bar" style="display:none">
+  <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+</div>
+
+<!-- FILTROS -->
+<div class="filters" id="filters-bar" style="display:none">
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search-input" placeholder="Buscar por nome, número, cidade..." oninput="applyFilters()"/>
+  </div>
+  <select class="filter-select" id="filter-status" onchange="applyFilters()">
+    <option value="">Todos os status</option>
+    <option value="pendente">Pendentes</option>
+    <option value="contatado">Contatados</option>
+    <option value="sem_site">Sem site</option>
+  </select>
+  <select class="filter-select" id="filter-cat" onchange="applyFilters()">
+    <option value="">Todas as categorias</option>
+  </select>
+  <select class="filter-select" id="filter-cidade" onchange="applyFilters()">
+    <option value="">Todas as cidades</option>
+  </select>
+</div>
+
+<!-- IMPORT ZONE -->
+<div class="import-zone" id="import-zone" ondragover="e.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="e.preventDefault();this.classList.remove('drag');handleFile(e.dataTransfer.files[0])" onclick="document.getElementById('file-input').click()">
+  <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+  <p>Arraste o CSV do Apify aqui ou <strong>clique para selecionar</strong></p>
+  <span>Aceita qualquer CSV exportado pelo Apify Google Maps Scraper</span>
+</div>
+
+<!-- COLUMN MAP -->
+<div class="col-map" id="col-map" style="display:none">
+  <h3>Mapeamento de colunas</h3>
+  <p>Selecione qual coluna do seu CSV corresponde a cada campo</p>
+  <div class="col-map-grid" id="col-map-grid"></div>
+  <div style="margin-top:16px;display:flex;gap:8px">
+    <button class="btn btn-g" onclick="importarDados()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Confirmar e importar
+    </button>
+    <button class="btn btn-gh" onclick="cancelarImport()">Cancelar</button>
+  </div>
+</div>
+
+<!-- TABELA -->
+<div class="tbl-container" id="tbl-container" style="display:none">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" onclick="sortBy('nome')" id="th-nome">Empresa</th>
+          <th class="sortable" onclick="sortBy('telefone')" id="th-telefone">Telefone</th>
+          <th class="sortable" onclick="sortBy('categoria')" id="th-categoria">Categoria</th>
+          <th class="sortable" onclick="sortBy('cidade')" id="th-cidade">Cidade</th>
+          <th>Site</th>
+          <th>Status</th>
+          <th style="text-align:right">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PAGINAÇÃO -->
+<div class="pagination" id="pagination" style="display:none">
+  <span class="pag-info" id="pag-info"></span>
+  <div class="pag-btns" id="pag-btns"></div>
+</div>
+
+<!-- EMPTY FILTERED -->
+<div class="empty" id="empty-filtered" style="display:none">
+  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <p>Nenhum resultado encontrado</p>
+  <span>Tente ajustar os filtros</span>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG SUPABASE ──
+const SB_URL = 'https://jqmnmudfxxdcjfradvcj.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxbW5tdWRmeHhkY2pmcmFkdmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNDAxNTMsImV4cCI6MjA4OTYxNjE1M30.LKZz_djPhIc_PvdLxAAhLaV-BZxX70nGup-qODIDEF4';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let currentUser = null;
+let allRows = [];       // todos os dados importados (localStorage)
+let filtered = [];      // após filtros
+let csvHeaders = [];    // colunas do CSV
+let csvRawRows = [];    // linhas brutas do CSV
+let sortField = '';
+let sortDir = 'asc';
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+// ── CAMPOS QUE QUEREMOS MAPEAR ──
+const FIELDS = [
+  { key: 'nome',      label: 'Nome / Empresa',  required: true  },
+  { key: 'telefone',  label: 'Telefone',         required: true  },
+  { key: 'categoria', label: 'Categoria',        required: false },
+  { key: 'cidade',    label: 'Cidade',           required: false },
+  { key: 'site',      label: 'Site',             required: false },
+  { key: 'instagram', label: 'Instagram',        required: false },
+  { key: 'endereco',  label: 'Endereço',         required: false },
+];
+
+// Mapeamentos automáticos (nome da coluna → campo)
+const AUTO_MAP = {
+  'title': 'nome', 'name': 'nome', 'nome': 'nome', 'empresa': 'nome', 'estabelecimento': 'nome',
+  'phone': 'telefone', 'telefone': 'telefone', 'celular': 'telefone', 'whatsapp': 'telefone', 'phoneNumber': 'telefone', 'phone1': 'telefone',
+  'categoryName': 'categoria', 'category': 'categoria', 'categoria': 'categoria', 'tipo': 'categoria',
+  'city': 'cidade', 'cidade': 'cidade', 'location/city': 'cidade',
+  'website': 'site', 'url': 'site', 'site': 'site', 'websiteUrl': 'site',
+  'instagram': 'instagram', 'instagramUrl': 'instagram',
+  'address': 'endereco', 'endereco': 'endereco', 'fullAddress': 'endereco', 'street': 'endereco',
+};
+
+// ── AUTH ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  currentUser = session.user;
+  document.getElementById('user-label').textContent = currentUser.email?.split('@')[0] || 'usuário';
+  carregarDados();
+}
+
+// ── LOCALSTORAGE ──
+const storageKey = () => `prosp_${currentUser?.id || 'local'}`;
+const storageStatus = () => `prosp_status_${currentUser?.id || 'local'}`;
+
+function carregarDados() {
+  const raw = localStorage.getItem(storageKey());
+  if (raw) {
+    allRows = JSON.parse(raw);
+    const status = JSON.parse(localStorage.getItem(storageStatus()) || '{}');
+    allRows.forEach(r => { r._status = status[r._id] || 'pendente'; });
+    mostrarTabela();
+  }
+}
+
+function salvarDados() {
+  localStorage.setItem(storageKey(), JSON.stringify(allRows));
+  const status = {};
+  allRows.forEach(r => { status[r._id] = r._status; });
+  localStorage.setItem(storageStatus(), JSON.stringify(status));
+}
+
+// ── PARSE CSV ──
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return { headers: [], rows: [] };
+  const headers = parseLine(lines[0]);
+  const rows = lines.slice(1).map(l => {
+    const vals = parseLine(l);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v.trim()));
+  return { headers, rows };
+}
+
+function parseLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+// ── HANDLE FILE ──
+function handleFile(file) {
+  if (!file || !file.name.endsWith('.csv')) { toast('Selecione um arquivo .csv', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const { headers, rows } = parseCSV(e.target.result);
+    if (!headers.length || !rows.length) { toast('CSV inválido ou vazio', 'err'); return; }
+    csvHeaders = headers;
+    csvRawRows = rows;
+    mostrarMapeamento();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── MAPEAMENTO DE COLUNAS ──
+function mostrarMapeamento() {
+  document.getElementById('import-zone').style.display = 'none';
+  document.getElementById('col-map').style.display = 'block';
+  document.getElementById('tbl-container').style.display = 'none';
+  document.getElementById('stats-bar').style.display = 'none';
+  document.getElementById('filters-bar').style.display = 'none';
+  document.getElementById('pagination').style.display = 'none';
+  document.getElementById('btn-limpar').style.display = 'none';
+
+  const grid = document.getElementById('col-map-grid');
+  grid.innerHTML = FIELDS.map(f => {
+    const autoVal = csvHeaders.find(h => AUTO_MAP[h] === f.key) || '';
+    const opts = csvHeaders.map(h => `<option value="${h}" ${h === autoVal ? 'selected' : ''}>${h}</option>`).join('');
+    return `<div class="col-field">
+      <label>${f.label}${f.required ? ' *' : ''}</label>
+      <select id="map-${f.key}">
+        ${f.required ? '' : '<option value="">— ignorar —</option>'}
+        ${opts}
+      </select>
+    </div>`;
+  }).join('');
+
+  toast(`${csvRawRows.length} linhas encontradas. Confirme o mapeamento.`, 'info');
+}
+
+function cancelarImport() {
+  document.getElementById('col-map').style.display = 'none';
+  if (allRows.length) {
+    mostrarTabela();
+  } else {
+    document.getElementById('import-zone').style.display = 'block';
+  }
+}
+
+function importarDados() {
+  const map = {};
+  FIELDS.forEach(f => {
+    const val = document.getElementById(`map-${f.key}`).value;
+    if (val) map[f.key] = val;
+  });
+
+  if (!map.nome || !map.telefone) {
+    toast('Selecione pelo menos Nome e Telefone', 'err'); return;
+  }
+
+  const novos = csvRawRows.map((row, i) => {
+    const nome = row[map.nome]?.trim() || '';
+    const tel = limparTel(row[map.telefone] || '');
+    if (!nome && !tel) return null;
+    return {
+      _id: `${Date.now()}_${i}`,
+      _status: 'pendente',
+      nome: nome || tel,
+      telefone: tel,
+      categoria: map.categoria ? row[map.categoria]?.trim() : '',
+      cidade: map.cidade ? row[map.cidade]?.trim() : '',
+      site: map.site ? row[map.site]?.trim() : '',
+      instagram: map.instagram ? row[map.instagram]?.trim() : '',
+      endereco: map.endereco ? row[map.endereco]?.trim() : '',
+    };
+  }).filter(Boolean);
+
+  // Deduplica por telefone — não reimporta já existentes
+  const existTels = new Set(allRows.map(r => r.telefone));
+  const filtrados = novos.filter(r => !existTels.has(r.telefone));
+  allRows = [...filtrados, ...allRows];
+
+  salvarDados();
+  document.getElementById('col-map').style.display = 'none';
+  mostrarTabela();
+  toast(`${filtrados.length} empresas importadas! (${novos.length - filtrados.length} duplicatas ignoradas)`, 'ok');
+}
+
+function limparTel(t) {
+  const d = t.replace(/\D/g, '');
+  // Remove 55 internacional se tiver
+  if (d.startsWith('55') && d.length > 11) return d.slice(2);
+  return d;
+}
+
+// ── MOSTRAR TABELA ──
+function mostrarTabela() {
+  document.getElementById('import-zone').style.display = 'none';
+  document.getElementById('col-map').style.display = 'none';
+  document.getElementById('tbl-container').style.display = 'block';
+  document.getElementById('stats-bar').style.display = 'flex';
+  document.getElementById('filters-bar').style.display = 'flex';
+  document.getElementById('btn-limpar').style.display = 'flex';
+
+  popularFiltros();
+  applyFilters();
+  updateStats();
+  updateProgress();
+}
+
+function popularFiltros() {
+  const cats = [...new Set(allRows.map(r => r.categoria).filter(Boolean))].sort();
+  const cidades = [...new Set(allRows.map(r => r.cidade).filter(Boolean))].sort();
+
+  const catSel = document.getElementById('filter-cat');
+  const cidSel = document.getElementById('filter-cidade');
+  const prevCat = catSel.value;
+  const prevCid = cidSel.value;
+
+  catSel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  cidSel.innerHTML = '<option value="">Todas as cidades</option>' + cidades.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  catSel.value = prevCat;
+  cidSel.value = prevCid;
+}
+
+function applyFilters() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const status = document.getElementById('filter-status').value;
+  const cat = document.getElementById('filter-cat').value;
+  const cidade = document.getElementById('filter-cidade').value;
+
+  filtered = allRows.filter(r => {
+    if (q && !`${r.nome} ${r.telefone} ${r.cidade} ${r.categoria}`.toLowerCase().includes(q)) return false;
+    if (status === 'sem_site' && r.site) return false;
+    if (status === 'pendente' && r._status !== 'pendente') return false;
+    if (status === 'contatado' && r._status !== 'contatado') return false;
+    if (cat && r.categoria !== cat) return false;
+    if (cidade && r.cidade !== cidade) return false;
+    return true;
+  });
+
+  // Sort
+  if (sortField) {
+    filtered.sort((a, b) => {
+      const av = (a[sortField] || '').toLowerCase();
+      const bv = (b[sortField] || '').toLowerCase();
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }
+
+  currentPage = 1;
+  renderTabela();
+}
+
+function sortBy(field) {
+  if (sortField === field) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortField = field; sortDir = 'asc'; }
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+  const th = document.getElementById(`th-${field}`);
+  if (th) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  applyFilters();
+}
+
+function renderTabela() {
+  const tbody = document.getElementById('tbl-body');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filtered.slice(start, start + PAGE_SIZE);
+
+  if (!filtered.length) {
+    document.getElementById('empty-filtered').style.display = allRows.length ? 'block' : 'none';
+    document.getElementById('tbl-container').style.display = allRows.length ? 'block' : 'none';
+    document.getElementById('pagination').style.display = 'none';
+    tbody.innerHTML = '';
+    return;
+  }
+
+  document.getElementById('empty-filtered').style.display = 'none';
+  document.getElementById('tbl-container').style.display = 'block';
+
+  tbody.innerHTML = page.map(r => {
+    const contatado = r._status === 'contatado';
+    const semSite = !r.site;
+    const badgeClass = contatado ? 'badge-cont' : semSite ? 'badge-sem' : 'badge-pend';
+    const badgeLabel = contatado ? '✓ Contatado' : semSite ? 'Sem site' : 'Pendente';
+    const telFmt = formatTel(r.telefone);
+
+    return `<tr class="${contatado ? 'contatado' : ''}" data-id="${r._id}">
+      <td><div class="td-nome" onclick="copiarNome('${escHtml(r.nome)}')" title="Clique para copiar">${escHtml(r.nome)}</div></td>
+      <td>
+        <div class="td-num" onclick="copiarTel('${r.telefone}')" title="Clique para copiar">
+          ${telFmt}
+          <span class="copy-hint">copiar</span>
+        </div>
+      </td>
+      <td class="td-cat">${escHtml(r.categoria || '—')}</td>
+      <td class="td-cidade">${escHtml(r.cidade || '—')}</td>
+      <td class="td-site">${r.site ? `<a href="${escHtml(r.site)}" target="_blank" rel="noopener">${escHtml(r.site.replace(/^https?:\/\//, ''))}</a>` : '<span class="sem-site">Sem site</span>'}</td>
+      <td class="td-status"><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+      <td style="text-align:right">
+        <button class="btn-contact ${contatado ? 'done' : ''}" onclick="${contatado ? '' : `marcarContato('${r._id}')`}"
+          ${contatado ? 'disabled' : ''}>
+          ${contatado ? '✓ Feito' : '📲 Entrei em contato'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPaginacao();
+}
+
+function renderPaginacao() {
+  const total = filtered.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const start = (currentPage - 1) * PAGE_SIZE + 1;
+  const end = Math.min(currentPage * PAGE_SIZE, total);
+
+  document.getElementById('pag-info').textContent = `Mostrando ${start}–${end} de ${total}`;
+  document.getElementById('pagination').style.display = pages > 1 ? 'flex' : 'none';
+
+  const btns = document.getElementById('pag-btns');
+  let html = `<button class="pag-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>←</button>`;
+
+  const range = getPagRange(currentPage, pages);
+  range.forEach(p => {
+    if (p === '...') html += `<span style="padding:5px 6px;color:var(--gr)">…</span>`;
+    else html += `<button class="pag-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+  });
+
+  html += `<button class="pag-btn" onclick="goPage(${currentPage + 1})" ${currentPage === pages ? 'disabled' : ''}>→</button>`;
+  btns.innerHTML = html;
+}
+
+function getPagRange(cur, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (cur <= 4) return [1, 2, 3, 4, 5, '...', total];
+  if (cur >= total - 3) return [1, '...', total-4, total-3, total-2, total-1, total];
+  return [1, '...', cur-1, cur, cur+1, '...', total];
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE);
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderTabela();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── AÇÕES ──
+async function marcarContato(id) {
+  const row = allRows.find(r => r._id === id);
+  if (!row || row._status === 'contatado') return;
+
+  row._status = 'contatado';
+  salvarDados();
+
+  // Criar lead no Supabase na etapa "contato"
+  try {
+    const payload = {
+      id: 'prosp_' + id,
+      user_id: currentUser.id,
+      nome: row.nome,
+      telefone: row.telefone,
+      negocio: row.nome,
+      categoria: row.categoria || '',
+      cidade: row.cidade || '',
+      instagram: row.instagram || '',
+      site_atual: row.site || '',
+      etapa: 'contato',
+      prioridade: 'media',
+      origem: 'prospeccao',
+      notas: row.endereco ? `Endereço: ${row.endereco}` : '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    await sb.from('leads').upsert(payload, { onConflict: 'id' });
+    toast(`${row.nome} adicionado ao Kanban ✓`, 'ok');
+  } catch (e) {
+    toast('Marcado localmente (erro ao sincronizar Supabase)', 'info');
+  }
+
+  updateStats();
+  updateProgress();
+  applyFilters();
+}
+
+function copiarTel(tel) {
+  const formatted = tel.length === 11 ? `(${tel.slice(0,2)}) ${tel.slice(2,7)}-${tel.slice(7)}` : tel;
+  navigator.clipboard?.writeText(formatted).then(() => toast(`${formatted} copiado!`, 'ok')).catch(() => {
+    // fallback
+    const el = document.createElement('input');
+    el.value = formatted;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    toast(`${formatted} copiado!`, 'ok');
+  });
+}
+
+function copiarNome(nome) {
+  navigator.clipboard?.writeText(nome).then(() => toast(`"${nome}" copiado!`, 'ok')).catch(() => {});
+}
+
+function updateStats() {
+  const total = allRows.length;
+  const cont = allRows.filter(r => r._status === 'contatado').length;
+  const pend = total - cont;
+  const sem = allRows.filter(r => !r.site).length;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pend').textContent = pend;
+  document.getElementById('s-cont').textContent = cont;
+  document.getElementById('s-sem').textContent = sem;
+}
+
+function updateProgress() {
+  const total = allRows.length;
+  const cont = allRows.filter(r => r._status === 'contatado').length;
+  const pct = total ? Math.round(cont / total * 100) : 0;
+  const bar = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+  if (total > 0) {
+    bar.style.display = 'block';
+    fill.style.width = pct + '%';
+    fill.title = `${pct}% contatados`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function confirmarLimpar() {
+  if (!confirm(`Limpar toda a lista de ${allRows.length} empresas? Esta ação não pode ser desfeita.`)) return;
+  allRows = [];
+  salvarDados();
+  document.getElementById('stats-bar').style.display = 'none';
+  document.getElementById('filters-bar').style.display = 'none';
+  document.getElementById('tbl-container').style.display = 'none';
+  document.getElementById('pagination').style.display = 'none';
+  document.getElementById('progress-bar').style.display = 'none';
+  document.getElementById('btn-limpar').style.display = 'none';
+  document.getElementById('empty-filtered').style.display = 'none';
+  document.getElementById('import-zone').style.display = 'block';
+  document.getElementById('search-input').value = '';
+  toast('Lista limpa', 'ok');
+}
+
+// ── UTILS ──
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatTel(t) {
+  if (!t) return '—';
+  const d = t.replace(/\D/g, '');
+  if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  return t;
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── INIT ──
+init();
+</script>
+</body>
+</html>

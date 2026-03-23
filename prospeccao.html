@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Prospecção — Sano Lab</title>
+<title>Prospecção — SLAC</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -148,7 +148,7 @@ tbody td{padding:11px 14px;vertical-align:middle}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       CRM
     </a>
-    <h1>Prospecção</h1>
+    <h1>📋 Prospecção</h1>
   </div>
   <div class="topbar-right">
     <span id="user-label" style="font-size:.75rem;color:var(--gr)"></span>
@@ -201,7 +201,7 @@ tbody td{padding:11px 14px;vertical-align:middle}
 <div class="import-zone" id="import-zone" ondragover="e.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="e.preventDefault();this.classList.remove('drag');handleFile(e.dataTransfer.files[0])" onclick="document.getElementById('file-input').click()">
   <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
   <p>Arraste o CSV do Apify aqui ou <strong>clique para selecionar</strong></p>
-  <span>Aceita qualquer CSV exportado pelo Apify Google Maps Scraper</span>
+  <span>Aceita qualquer CSV exportado pelo Apify Google Maps Scraper · <strong>SLAC</strong> — Sano Lab</span>
 </div>
 
 <!-- COLUMN MAP -->
@@ -549,8 +549,8 @@ function renderTabela() {
       <td class="td-status"><span class="badge ${badgeClass}">${badgeLabel}</span></td>
       <td style="text-align:right">
         <button class="btn-contact ${contatado ? 'done' : ''}" onclick="${contatado ? '' : `marcarContato('${r._id}')`}"
-          ${contatado ? 'disabled' : ''}>
-          ${contatado ? '✓ Feito' : '📲 Entrei em contato'}
+          ${contatado ? 'disabled' : ''} title="${contatado && r._contatado_em ? 'Contatado em ' + new Date(r._contatado_em).toLocaleString('pt-BR') : ''}">
+          ${contatado ? '✓ Contatei · ' + (r._contatado_em ? new Date(r._contatado_em).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '') : '📲 Contatei'}
         </button>
       </td>
     </tr>`;
@@ -601,8 +601,18 @@ async function marcarContato(id) {
   const row = allRows.find(r => r._id === id);
   if (!row || row._status === 'contatado') return;
 
+  const agora = new Date();
   row._status = 'contatado';
+  row._contatado_em = agora.toISOString();
   salvarDados();
+
+  // Montar notas com todas as informações disponíveis
+  const notasPartes = [];
+  if (row.endereco) notasPartes.push(`Endereço: ${row.endereco}`);
+  if (row.site) notasPartes.push(`Site atual: ${row.site}`);
+  if (row.instagram) notasPartes.push(`Instagram: ${row.instagram}`);
+  notasPartes.push(`Contatado em: ${agora.toLocaleString('pt-BR')}`);
+  notasPartes.push(`Origem: Prospecção Apify`);
 
   // Criar lead no Supabase na etapa "contato"
   try {
@@ -619,14 +629,14 @@ async function marcarContato(id) {
       etapa: 'contato',
       prioridade: 'media',
       origem: 'prospeccao',
-      notas: row.endereco ? `Endereço: ${row.endereco}` : '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      notas: notasPartes.join('\n'),
+      created_at: agora.toISOString(),
+      updated_at: agora.toISOString(),
     };
     await sb.from('leads').upsert(payload, { onConflict: 'id' });
-    toast(`${row.nome} adicionado ao Kanban ✓`, 'ok');
+    toast(`${row.nome} → Kanban ✓`, 'ok');
   } catch (e) {
-    toast('Marcado localmente (erro ao sincronizar Supabase)', 'info');
+    toast('Marcado localmente', 'info');
   }
 
   updateStats();

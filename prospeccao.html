@@ -239,10 +239,6 @@ tbody td{padding:11px 14px;vertical-align:middle}
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
       Modo Foco
     </button>
-    <button class="btn btn-gh" onclick="exportarCSV()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Exportar CSV
-    </button>
     <button class="btn btn-gh" onclick="document.getElementById('file-input').click()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Importar CSV
@@ -987,7 +983,11 @@ function renderFocoCard() {
   const r = focoLista[focoIdx];
   const total = focoLista.length;
   document.getElementById('foco-counter').textContent = `${focoIdx+1} / ${total} pendentes`;
-  document.getElementById('foco-prog').style.width = Math.round(focoIdx/total*100)+'%';
+  // Progresso = quantos foram contatados do total geral
+  const totalGeral = allRows.length;
+  const contatadosGeral = allRows.filter(r => r._status === 'contatado').length;
+  const pctGeral = totalGeral ? Math.round(contatadosGeral/totalGeral*100) : 0;
+  document.getElementById('foco-prog').style.width = pctGeral+'%';
   document.getElementById('foco-nome').textContent = r.nome;
   document.getElementById('foco-cat').textContent = r.categoria||'';
   document.getElementById('foco-cidade').textContent = r.cidade||'';
@@ -1133,39 +1133,6 @@ function toast(msg, type='ok') {
   clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'),3000);
 }
 
-// ── EXPORTAR CSV ──
-function exportarCSV() {
-  if (!allRows.length) { toast('Nenhum dado para exportar', 'err'); return; }
-
-  const cols = ['nome','telefone','categoria','cidade','site','instagram','endereco','_status','_contatado_em'];
-  const headers = ['Nome','Telefone','Categoria','Cidade','Site','Instagram','Endereço','Status','Contatado em'];
-
-  const escape = v => {
-    const s = String(v||'');
-    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
-  };
-
-  const rows = [
-    headers.join(','),
-    ...allRows.map(r => cols.map(c => {
-      if (c === '_contatado_em') return escape(r[c] ? new Date(r[c]).toLocaleString('pt-BR') : '');
-      if (c === '_status') return escape(r[c] === 'contatado' ? 'Contatado' : 'Pendente');
-      return escape(r[c]);
-    }).join(','))
-  ].join('\n');
-
-  const bom = '\uFEFF'; // BOM para Excel reconhecer UTF-8
-  const blob = new Blob([bom + rows], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `prospeccao_sanolab_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast(`${allRows.length} linhas exportadas ✓`, 'ok');
-}
 
 init();
 </script>

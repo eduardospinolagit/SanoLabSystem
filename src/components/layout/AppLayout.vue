@@ -210,6 +210,31 @@ async function handleLogout() {
   await auth.logout()
 }
 
+// Icons (usados tanto no nav quanto no search)
+const icons_search = {
+  dashboard:    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`,
+  crm:          `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  financeiro:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+  recorrencias: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  mapa:         `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
+  search:       `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+}
+
+const mainNav = [
+  { path: '/dashboard',    label: 'Dashboard',    icon: icons_search.dashboard },
+  { path: '/crm',          label: 'CRM',          icon: icons_search.crm },
+  { path: '/financeiro',   label: 'Financeiro',   icon: icons_search.financeiro },
+  { path: '/recorrencias', label: 'Recorrências', icon: icons_search.recorrencias },
+  { path: '/mapa',         label: 'Mapa Mental',  icon: icons_search.mapa },
+]
+const mobileNav = [
+  { path: '/dashboard',  short: 'Dash',   icon: icons_search.dashboard },
+  { path: '/crm',        short: 'CRM',    icon: icons_search.crm },
+  { path: '/financeiro', short: 'Fin.',   icon: icons_search.financeiro },
+  { path: '/mapa',       short: 'Mapa',   icon: icons_search.mapa },
+  { path: '/prospeccao', short: 'Prosp.', icon: icons_search.search },
+]
+
 // Search
 const searchQuery   = ref('')
 const searchResults = ref([])
@@ -254,30 +279,7 @@ function handleKeydown(e) {
 onMounted(() => document.addEventListener('keydown', handleKeydown))
 onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
-// Icons (usados tanto no nav quanto no search)
-const icons_search = {
-  dashboard:    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`,
-  crm:          `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-  financeiro:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
-  recorrencias: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
-  mapa:         `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
-  search:       `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
-}
 
-const mainNav = [
-  { path: '/dashboard',    label: 'Dashboard',    icon: icons_search.dashboard },
-  { path: '/crm',          label: 'CRM',          icon: icons_search.crm },
-  { path: '/financeiro',   label: 'Financeiro',   icon: icons_search.financeiro },
-  { path: '/recorrencias', label: 'Recorrências', icon: icons_search.recorrencias },
-  { path: '/mapa',         label: 'Mapa Mental',  icon: icons_search.mapa },
-]
-const mobileNav = [
-  { path: '/dashboard',  short: 'Dash',   icon: icons_search.dashboard },
-  { path: '/crm',        short: 'CRM',    icon: icons_search.crm },
-  { path: '/financeiro', short: 'Fin.',   icon: icons_search.financeiro },
-  { path: '/mapa',       short: 'Mapa',   icon: icons_search.mapa },
-  { path: '/prospeccao', short: 'Prosp.', icon: icons_search.search },
-]
 
 // Welcome
 const welcomeInput     = ref(null)

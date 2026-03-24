@@ -4,23 +4,29 @@ import { sb } from '@/lib/supabase'
 import { useAuthStore } from './auth'
 
 export const ETAPAS = [
-  { id: 'contato',    label: 'Contato',     color: '#3b82f6' },
-  { id: 'interesse',  label: 'Interesse',   color: '#f59e0b' },
-  { id: 'demo',       label: 'Demo enviada',color: '#8b5cf6' },
-  { id: 'negociacao', label: 'Negociação',  color: '#f97316' },
-  { id: 'fechado',    label: 'Fechado',     color: '#22c55e' },
-  { id: 'perdido',    label: 'Perdido',     color: '#555'    },
+  { id: 'contato',    label: 'Contato',      color: '#3b82f6' },
+  { id: 'interesse',  label: 'Interesse',    color: '#f59e0b' },
+  { id: 'demo',       label: 'Demo enviada', color: '#8b5cf6' },
+  { id: 'negociacao', label: 'Negociação',   color: '#f97316' },
+  { id: 'fechado',    label: 'Fechado',      color: '#22c55e' },
+  { id: 'perdido',    label: 'Perdido',      color: '#555'    },
 ]
 
 export const useLeadsStore = defineStore('leads', () => {
-  const auth = useAuthStore()
   const leads = ref([])
   const conversas = ref([])
+
+  // Pega o user dinamicamente
+  function uid() {
+    const auth = useAuthStore()
+    if (!auth.user?.id) throw new Error('Usuário não autenticado')
+    return auth.user.id
+  }
 
   async function load() {
     const { data, error } = await sb
       .from('leads').select('*')
-      .eq('user_id', auth.user.id)
+      .eq('user_id', uid())
       .order('created_at', { ascending: false })
     if (error) { console.error(error); return }
     leads.value = data || []
@@ -29,7 +35,7 @@ export const useLeadsStore = defineStore('leads', () => {
   async function loadConversas(leadId) {
     const { data, error } = await sb
       .from('conversas').select('*')
-      .eq('user_id', auth.user.id)
+      .eq('user_id', uid())
       .eq('lead_id', leadId)
       .order('data', { ascending: true })
     if (error) return []
@@ -39,13 +45,13 @@ export const useLeadsStore = defineStore('leads', () => {
 
   async function upsert(payload) {
     const { error } = await sb.from('leads').upsert(
-      { ...payload, user_id: auth.user.id },
+      { ...payload, user_id: uid() },
       { onConflict: 'id' }
     )
     if (error) throw error
     const idx = leads.value.findIndex(l => l.id === payload.id)
-    if (idx !== -1) leads.value[idx] = payload
-    else leads.value.unshift(payload)
+    if (idx !== -1) leads.value[idx] = { ...payload, user_id: uid() }
+    else leads.value.unshift({ ...payload, user_id: uid() })
   }
 
   async function remove(id) {
@@ -53,13 +59,13 @@ export const useLeadsStore = defineStore('leads', () => {
     leads.value = leads.value.filter(l => l.id !== id)
     // Sincroniza Supabase em background
     sb.from('conversas').delete().eq('lead_id', id).then(() => {})
-    sb.from('leads').delete().eq('id', id).eq('user_id', auth.user.id).then(() => {})
+    sb.from('leads').delete().eq('id', id).eq('user_id', uid()).then(() => {})
   }
 
   async function addConversa(leadId, canal, direcao, mensagem) {
     const nova = {
       id: 'c' + Date.now(),
-      user_id: auth.user.id,
+      user_id: uid(),
       lead_id: leadId,
       canal, direcao, mensagem,
       data: new Date().toISOString()
@@ -74,7 +80,6 @@ export const useLeadsStore = defineStore('leads', () => {
     return leads.value.find(l => l.id === id)
   }
 
-  // Stats do dashboard
   const stats = computed(() => {
     const total = leads.value.length
     const fechados = leads.value.filter(l => l.etapa === 'fechado').length
@@ -91,7 +96,6 @@ export const useLeadsStore = defineStore('leads', () => {
     return { total, fechados, negociando, fuHoje, pipe }
   })
 
-  // Follow-ups vencidos/hoje para alertas
   const followUpsAlerta = computed(() => {
     const hoje = new Date()
     return leads.value.filter(l => {

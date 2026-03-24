@@ -23,6 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = false
     }
 
+    // Escuta mudanças de sessão
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         user.value = session.user

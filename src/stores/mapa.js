@@ -78,25 +78,31 @@ const dadosDefault = [
 ]
 
 export const useMapaStore = defineStore('mapa', () => {
-  const auth = useAuthStore()
   const dados = ref(JSON.parse(JSON.stringify(dadosDefault)))
+
+  function uid() {
+    const auth = useAuthStore()
+    if (!auth.user?.id) throw new Error('Usuário não autenticado')
+    return auth.user.id
+  }
 
   async function load() {
     const { data, error } = await sb
       .from('configuracoes').select('*')
-      .eq('user_id', auth.user.id).eq('chave', 'mapa')
+      .eq('user_id', uid()).eq('chave', 'mapa')
     if (error || !data?.length) { dados.value = JSON.parse(JSON.stringify(dadosDefault)); return }
     dados.value = data[0].valor
   }
 
   async function save() {
-    await sb.from('configuracoes').upsert({
-      id: auth.user.id + '_mapa',
-      user_id: auth.user.id,
+    const { error } = await sb.from('configuracoes').upsert({
+      id: uid() + '_mapa',
+      user_id: uid(),
       chave: 'mapa',
       valor: dados.value,
       updated_at: new Date().toISOString()
     }, { onConflict: 'id' })
+    if (error) throw error
   }
 
   async function changeStatus(catId, itemId, status) {

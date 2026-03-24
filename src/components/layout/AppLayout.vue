@@ -1,16 +1,13 @@
 <template>
   <div class="layout" :class="{ 'sb-col': collapsed }">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
-
-      <!-- Topo: logo + toggle -->
+      <!-- Topo -->
       <div class="sb-top">
-        <div class="sb-brand" 
+        <div class="sb-brand">
           <img src="/logo.png" alt="SLAC" class="sb-logo-img" />
           <span class="sb-brand-name">SLAC</span>
         </div>
-        <img v-show="collapsed" src="/logo.png" alt="SLAC" class="sb-logo-mini" />
         <button class="sb-toggle" @click="toggle" :title="collapsed ? 'Expandir' : 'Recolher'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline v-if="collapsed" points="9 18 15 12 9 6"/>
@@ -22,23 +19,23 @@
       <!-- Nav -->
       <nav class="sb-nav">
         <div class="sb-group">
-          <span class="sb-group-label" Principal</span>
+          <span class="sb-group-label">Principal</span>
           <button v-for="item in mainNav" :key="item.path"
             class="sb-item" :class="{ active: route.path === item.path }"
-            @click="go(item.path)" :title="collapsed ? item.label : ''"
+            @click="go(item.path)" :title="item.label"
           >
             <span class="sb-icon" v-html="item.icon"></span>
-            <span class="sb-label" {{ item.label }}</span>
+            <span class="sb-label">{{ item.label }}</span>
           </button>
         </div>
 
         <div class="sb-group">
-          <span class="sb-group-label" Ferramentas</span>
+          <span class="sb-group-label">Ferramentas</span>
           <button class="sb-item" :class="{ active: route.path === '/prospeccao' }"
-            @click="go('/prospeccao')" :title="collapsed ? 'Prospecção' : ''"
+            @click="go('/prospeccao')" title="Prospecção"
           >
             <span class="sb-icon" v-html="icons.prospeccao"></span>
-            <span class="sb-label" Prospecção</span>
+            <span class="sb-label">Prospecção</span>
           </button>
         </div>
       </nav>
@@ -58,18 +55,18 @@
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
             </svg>
           </span>
-          <span class="sb-label" {{ isDark ? 'Modo claro' : 'Modo escuro' }}</span>
+          <span class="sb-label">{{ isDark ? 'Modo claro' : 'Modo escuro' }}</span>
         </button>
 
-        <div class="sb-user" :title="collapsed ? auth.userName : ''">
+        <div class="sb-user">
           <div class="avatar avatar-sm">{{ userInitial }}</div>
-          <div class="sb-user-info" 
+          <div class="sb-user-info">
             <span class="sb-user-name">{{ auth.userName }}</span>
             <span class="badge badge-accent" style="font-size:.6rem;padding:.1rem .4rem">PRO</span>
           </div>
         </div>
 
-        <button class="sb-item sb-item--danger" @click="auth.logout()" :title="collapsed ? 'Sair' : ''">
+        <button class="sb-item sb-item--danger" @click="auth.logout()" title="Sair">
           <span class="sb-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -77,14 +74,13 @@
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
           </span>
-          <span class="sb-label" Sair</span>
+          <span class="sb-label">Sair</span>
         </button>
 
-        <div class="sb-dev" Desenvolvido por Sano Lab</div>
+        <div class="sb-dev">Desenvolvido por Sano Lab</div>
       </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
       <router-view />
     </main>
@@ -156,12 +152,12 @@ function toggle() {
 const userInitial = computed(() => (auth.userName || '?').charAt(0).toUpperCase())
 
 const icons = {
-  dashboard: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`,
-  crm: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-  financeiro: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+  dashboard:    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`,
+  crm:          `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  financeiro:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
   recorrencias: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
-  mapa: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
-  prospeccao: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`,
+  mapa:         `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
+  prospeccao:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`,
 }
 
 const mainNav = [
@@ -180,8 +176,8 @@ const mobileNav = [
   { path: '/prospeccao', short: 'Prosp.', icon: icons.prospeccao },
 ]
 
-const welcomeInput = ref(null)
-const welcomeName  = ref('')
+const welcomeInput    = ref(null)
+const welcomeName     = ref('')
 const showWelcomeModal = ref(false)
 
 onMounted(async () => {
@@ -226,7 +222,7 @@ function go(path) { router.push(path) }
   top: 0;
   overflow: hidden;
   z-index: 100;
-  transition: width 220ms cubic-bezier(.4,0,.2,1), min-width 220ms cubic-bezier(.4,0,.2,1);
+  transition: width 240ms cubic-bezier(.4,0,.2,1), min-width 240ms cubic-bezier(.4,0,.2,1);
 }
 
 .sb-col .sidebar {
@@ -256,14 +252,9 @@ function go(path) { router.push(path) }
 
 .sb-logo-img {
   height: 26px;
-  width: auto;
+  width: 26px;
+  object-fit: contain;
   flex-shrink: 0;
-}
-
-.sb-logo-mini {
-  height: 26px;
-  width: auto;
-  margin: 0 auto;
 }
 
 .sb-brand-name {
@@ -273,7 +264,10 @@ function go(path) { router.push(path) }
   color: var(--text-primary);
   letter-spacing: -.03em;
   white-space: nowrap;
+  opacity: 1;
+  transition: opacity 200ms ease;
 }
+.sb-col .sb-brand-name { opacity: 0; }
 
 .sb-toggle {
   display: flex;
@@ -294,14 +288,7 @@ function go(path) { router.push(path) }
   color: var(--accent);
   border-color: var(--accent);
 }
-
-.sb-col .sb-top {
-  justify-content: center;
-  flex-direction: column;
-  gap: .625rem;
-  padding: .75rem .5rem;
-}
-.sb-col .sb-toggle { width: 32px; height: 32px; }
+.sb-col .sb-top { justify-content: space-between; }
 
 /* Nav */
 .sb-nav {
@@ -315,8 +302,9 @@ function go(path) { router.push(path) }
 
 .sb-group {
   padding: 0 .5rem;
-  margin-bottom: .375rem;
+  margin-bottom: .25rem;
 }
+.sb-col .sb-group { padding: 0 .375rem; }
 
 .sb-group-label {
   display: block;
@@ -327,8 +315,19 @@ function go(path) { router.push(path) }
   color: var(--text-tertiary);
   padding: .5rem .5rem .25rem;
   white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  max-height: 30px;
+  transition: opacity 180ms ease, max-height 240ms ease, padding 240ms ease;
+}
+.sb-col .sb-group-label {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
+/* Items */
 .sb-item {
   display: flex;
   align-items: center;
@@ -345,8 +344,8 @@ function go(path) { router.push(path) }
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
-  transition: background-color 120ms ease, color 120ms ease, padding 220ms ease, justify-content 220ms ease;
   overflow: hidden;
+  transition: background-color 120ms ease, color 120ms ease, padding 240ms ease;
 }
 .sb-item:hover { background: var(--accent-subtle); color: var(--accent); }
 .sb-item:hover .sb-icon { opacity: 1; }
@@ -354,6 +353,9 @@ function go(path) { router.push(path) }
 .sb-item.active .sb-icon { opacity: 1; }
 .sb-item--danger:hover { background: var(--status-danger-subtle); color: var(--status-danger); }
 
+.sb-col .sb-item { justify-content: center; padding: .625rem .5rem; gap: 0; }
+
+/* Ícone */
 .sb-icon {
   display: flex;
   align-items: center;
@@ -364,34 +366,24 @@ function go(path) { router.push(path) }
   opacity: .5;
   transition: opacity 120ms ease;
 }
+.sb-col .sb-icon { opacity: .65; }
+.sb-col .sb-item:hover .sb-icon,
+.sb-col .sb-item.active .sb-icon { opacity: 1; }
 
+/* Label — esconde via CSS, sem v-show */
 .sb-label {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 1;
-  max-width: 200px;
-  transition: opacity 180ms ease, max-width 220ms ease;
-  white-space: nowrap;
+  max-width: 160px;
+  transition: opacity 180ms ease, max-width 240ms ease;
 }
-
-/* Esconde labels via CSS puro — sem v-show, sem reflow */
-.sb-col .sb-label,
-.sb-col .sb-group-label,
-.sb-col .sb-brand-name,
-.sb-col .sb-user-info,
-.sb-col .sb-dev {
+.sb-col .sb-label {
   opacity: 0;
   max-width: 0;
   pointer-events: none;
 }
-
-/* Colapsado */
-.sb-col .sb-group { padding: 0 .375rem; }
-.sb-col .sb-item { justify-content: center; padding: .625rem; gap: 0; }
-.sb-col .sb-icon { opacity: .6; }
-.sb-col .sb-item:hover .sb-icon,
-.sb-col .sb-item.active .sb-icon { opacity: 1; }
 
 /* Footer */
 .sb-footer {
@@ -411,14 +403,18 @@ function go(path) { router.push(path) }
   border-radius: var(--radius-md);
   overflow: hidden;
 }
-.sb-col .sb-user { justify-content: center; padding: .5rem; }
+.sb-col .sb-user { justify-content: center; padding: .5rem .375rem; }
 
 .sb-user-info {
   display: flex;
   flex-direction: column;
   gap: .125rem;
   min-width: 0;
+  opacity: 1;
+  max-width: 160px;
+  transition: opacity 180ms ease, max-width 240ms ease;
 }
+.sb-col .sb-user-info { opacity: 0; max-width: 0; pointer-events: none; }
 
 .sb-user-name {
   font-size: .8rem;
@@ -435,7 +431,12 @@ function go(path) { router.push(path) }
   text-align: center;
   opacity: .45;
   padding-top: .25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 180ms ease, max-height 240ms ease;
+  max-height: 20px;
 }
+.sb-col .sb-dev { opacity: 0; max-height: 0; }
 
 /* Main */
 .main { flex: 1; min-width: 0; overflow-x: hidden; }

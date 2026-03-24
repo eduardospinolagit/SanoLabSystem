@@ -7,14 +7,5 @@ export const sb = createClient(SUPA_URL, SUPA_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-  },
-  global: {
-    fetch: (...args) => {
-      // Timeout de 15s para evitar travamento infinito
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 15000)
-      return fetch(args[0], { ...args[1], signal: controller.signal })
-        .finally(() => clearTimeout(timer))
-    }
   }
 })

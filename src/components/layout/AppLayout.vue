@@ -34,29 +34,13 @@
 
       <!-- Footer: toggle tema + "by Sano" -->
       <div class="sb-footer">
-        <!-- Theme toggle pill -->
+        <!-- Theme toggle + by Sano -->
         <div class="theme-pill">
-          <button
-            class="theme-opt" :class="{ active: isDark }"
-            @click="isDark ? null : toggleTheme()"
-            title="Modo escuro"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
+          <button class="theme-opt" :class="{ active: isDark }" @click="isDark ? null : toggleTheme()" title="Modo escuro">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
-          <button
-            class="theme-opt" :class="{ active: !isDark }"
-            @click="!isDark ? null : toggleTheme()"
-            title="Modo claro"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="5"/>
-              <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-            </svg>
+          <button class="theme-opt" :class="{ active: !isDark }" @click="!isDark ? null : toggleTheme()" title="Modo claro">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           </button>
           <span class="sb-by">by Sano</span>
         </div>
@@ -320,7 +304,7 @@ function go(path) { router.push(path) }
   width: 200px;
   min-width: 200px;
   background: var(--sidebar-bg);
-  border-right: 1px solid var(--sidebar-border);
+  border-right: none;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -438,10 +422,9 @@ function go(path) { router.push(path) }
   letter-spacing: .04em;
   padding: 0 .375rem 0 .125rem;
   white-space: nowrap;
-  opacity: 1; max-width: 60px;
-  transition: opacity 200ms ease, max-width 250ms ease;
+  overflow: hidden;
 }
-.collapsed .sb-by { opacity: 0; max-width: 0; overflow: hidden; padding: 0; }
+.collapsed .sb-by { display: none; }
 
 /* ── Main wrapper ── */
 .main-wrapper {
@@ -458,7 +441,7 @@ function go(path) { router.push(path) }
   gap: 1rem;
   padding: 0 1.25rem;
   height: 60px;
-  background: var(--sidebar-bg);
+  background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   position: sticky;

@@ -1,5 +1,5 @@
 <template>
-  <div class="dash-page">
+  <div class="page-layout">
 
     <div class="page-header">
       <div>
@@ -326,7 +326,7 @@ watch(theme, renderCharts)
 </script>
 
 <style scoped>
-.dash-page {
+.page-layout {
   padding: 1.25rem 1.5rem 2.5rem;
   display: flex;
   flex-direction: column;
@@ -417,7 +417,7 @@ watch(theme, renderCharts)
   .charts-row { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
-  .dash-page { padding:1rem 1rem 5rem; gap:1rem; }
+  .page-layout { padding:1rem 1rem 5rem; gap:1rem; }
   .kpi-grid--5, .kpi-grid--4 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 480px) {

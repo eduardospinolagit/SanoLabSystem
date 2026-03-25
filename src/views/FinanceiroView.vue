@@ -1,146 +1,227 @@
 <template>
-  <div class="page active">
-    <div class="topbar">
-      <h1>Financeiro</h1>
-      <div class="tbar-right">
-        <select v-model="mesFil" class="fs" style="font-size:.8rem;padding:6px 10px;width:auto">
+  <div class="page-layout">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Financeiro</h1>
+        <p class="page-subtitle">Receitas, despesas e fluxo de caixa</p>
+      </div>
+      <div class="page-actions">
+        <select v-model="mesFil" class="form-select" style="width:auto;font-size:.85rem">
           <option value="">Todo período</option>
           <option v-for="m in mesesDisponiveis" :key="m.val" :value="m.val">{{ m.label }}</option>
         </select>
-        <select v-model="tipoFil" class="fs" style="font-size:.8rem;padding:6px 10px;width:auto">
-          <option value="">Todos tipos</option>
-          <option value="entrada">Receitas</option>
-          <option value="saida">Despesas</option>
-        </select>
-        <button class="btn btn-g" @click="openModal('entrada')">+ Receita</button>
-        <button class="btn btn-gh" @click="openModal('saida')">+ Despesa</button>
+        <button class="btn btn-secondary" @click="openModal('saida')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Despesa
+        </button>
+        <button class="btn btn-primary" @click="openModal('entrada')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Receita
+        </button>
       </div>
     </div>
 
-    <div class="content">
-      <!-- KPIs -->
-      <div class="kpi-grid" style="--cols:5">
-        <div class="kpi"><div class="kl">Receita</div><div class="kv c-g">{{ fmt(f.rec) }}</div><div class="ks">{{ listaFiltrada.filter(t=>t.tipo==='entrada'&&t.st==='recebido').length }} tx</div></div>
-        <div class="kpi"><div class="kl">A receber</div><div class="kv c-a">{{ fmt(f.pend) }}</div><div class="ks">pendente</div></div>
-        <div class="kpi"><div class="kl">Despesas</div><div class="kv c-r">{{ fmt(f.sai) }}</div><div class="ks">{{ listaFiltrada.filter(t=>t.tipo==='saida').length }} tx</div></div>
-        <div class="kpi"><div class="kl">Lucro</div><div class="kv" :class="f.lucro>=0?'c-g':'c-r'">{{ fmt(f.lucro) }}</div><div class="ks">{{ f.lucro>=0?'positivo':'negativo' }}</div></div>
-        <div class="kpi"><div class="kl">Ticket médio</div><div class="kv c-b">{{ fmt(f.clis ? f.rec/f.clis : 0) }}</div><div class="ks">por cliente</div></div>
+    <!-- KPIs -->
+    <div class="kpi-grid kpi-grid--5">
+      <div class="kpi-card">
+        <span class="kpi-label">Receita</span>
+        <span class="kpi-value kpi-value--accent">{{ fmt(f.rec) }}</span>
+        <span class="kpi-sub">{{ listaFiltrada.filter(t=>t.tipo==='entrada'&&t.st==='recebido').length }} transações</span>
       </div>
-
-      <!-- Gráficos -->
-      <div class="chart-row">
-        <div class="chart-box">
-          <h3>Receita vs Despesa — ano</h3>
-          <div class="chart-wrap"><canvas ref="chartMen"></canvas></div>
-        </div>
-        <div class="chart-box">
-          <h3>Despesas por categoria</h3>
-          <div class="chart-wrap"><canvas ref="chartCat"></canvas></div>
-        </div>
+      <div class="kpi-card">
+        <span class="kpi-label">A receber</span>
+        <span class="kpi-value kpi-value--warning">{{ fmt(f.pend) }}</span>
+        <span class="kpi-sub">pendente</span>
       </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Despesas</span>
+        <span class="kpi-value kpi-value--danger">{{ fmt(f.sai) }}</span>
+        <span class="kpi-sub">{{ listaFiltrada.filter(t=>t.tipo==='saida').length }} transações</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Lucro</span>
+        <span class="kpi-value" :class="f.lucro>=0?'kpi-value--accent':'kpi-value--danger'">{{ fmt(f.lucro) }}</span>
+        <span class="kpi-sub">{{ f.lucro>=0?'positivo':'negativo' }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Ticket médio</span>
+        <span class="kpi-value" style="color:var(--status-info)">{{ fmt(f.clis ? f.rec/f.clis : 0) }}</span>
+        <span class="kpi-sub">por cliente</span>
+      </div>
+    </div>
 
-      <!-- Transações -->
-      <div class="tbox">
-        <div class="tbox-head">
-          <h3>Transações</h3>
-          <select v-model="catFil" class="fs" style="font-size:.8rem;padding:5px 8px;width:auto">
+    <!-- Gráficos -->
+    <div class="charts-row">
+      <div class="card chart-card">
+        <h3 class="chart-title">Receita vs Despesa — ano</h3>
+        <div class="chart-wrap"><canvas ref="chartMen"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3 class="chart-title">Despesas por categoria</h3>
+        <div class="chart-wrap"><canvas ref="chartCat"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Tabela de transações -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Transações</h3>
+        <div class="fin-filters">
+          <select v-model="tipoFil" class="form-select" style="width:auto;font-size:.82rem">
+            <option value="">Todos tipos</option>
+            <option value="entrada">Receitas</option>
+            <option value="saida">Despesas</option>
+          </select>
+          <select v-model="catFil" class="form-select" style="width:auto;font-size:.82rem">
             <option value="">Todas categorias</option>
             <option v-for="c in cats" :key="c" :value="c">{{ c }}</option>
           </select>
         </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente</th><th>Status</th><th>Valor</th><th></th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!listaFiltrada.length">
-                <td colspan="7" style="text-align:center;color:var(--gr);padding:16px">Nenhuma transação</td>
-              </tr>
-              <tr v-for="t in listaFiltrada" :key="t.id">
-                <td style="color:var(--gr)">{{ t.data }}</td>
-                <td>
-                  {{ t.desc }}
-                  <br v-if="t.obs" /><small v-if="t.obs" style="color:var(--gr)">{{ t.obs }}</small>
-                </td>
-                <td><span style="font-size:.72rem;background:#1a1a1a;padding:2px 7px;border-radius:999px;color:var(--lt)">{{ t.cat }}</span></td>
-                <td style="color:var(--gr)">{{ t.cli || '—' }}</td>
-                <td>
-                  <span class="tag" :class="t.tipo==='entrada' ? (t.st==='pendente' ? 't-pend' : 't-in') : 't-out'">
-                    {{ t.tipo==='entrada' ? (t.st==='pendente' ? 'Pendente' : 'Recebido') : 'Saída' }}
-                  </span>
-                </td>
-                <td :style="{ fontWeight:600, color: t.tipo==='entrada'?'var(--g)':'var(--r)' }">
-                  {{ t.tipo==='entrada'?'+':'-' }}{{ fmt(t.val) }}
-                </td>
-                <td style="white-space:nowrap;display:flex;gap:4px;align-items:center">
-                  <button v-if="t.tipo==='entrada'&&t.st==='pendente'" class="it-btn" style="color:var(--g);border-color:rgba(34,197,94,.4)" title="Confirmar recebimento" @click="confirmarRecebimento(t.id)">✓</button>
-                  <button class="it-btn" @click="editTx(t)">✏</button>
-                  <button class="it-btn" style="color:var(--r)" @click="rmTx(t.id)">✕</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      </div>
+
+      <div class="table-wrapper" style="margin-top:.75rem;border:none;border-radius:0;">
+        <table>
+          <thead>
+            <tr>
+              <th class="th-sort" @click="toggleSort('data')">Data <span class="sort-icon">{{ sortKey==='data'?(sortDir==='asc'?'↑':'↓'):'↕' }}</span></th>
+              <th class="th-sort" @click="toggleSort('desc')">Descrição <span class="sort-icon">{{ sortKey==='desc'?(sortDir==='asc'?'↑':'↓'):'↕' }}</span></th>
+              <th>Categoria</th>
+              <th>Cliente</th>
+              <th>Status</th>
+              <th class="th-sort" @click="toggleSort('val')" style="text-align:right">Valor <span class="sort-icon">{{ sortKey==='val'?(sortDir==='asc'?'↑':'↓'):'↕' }}</span></th>
+              <th style="width:90px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!listaOrdenada.length">
+              <td colspan="7" style="text-align:center;color:var(--text-tertiary);padding:2rem;font-size:.875rem">Nenhuma transação</td>
+            </tr>
+            <tr v-for="t in listaOrdenada" :key="t.id" class="tx-table-row">
+              <td class="text-muted text-sm" style="white-space:nowrap">{{ fmtData(t.data) }}</td>
+              <td>
+                <div style="font-weight:500;color:var(--text-primary)">{{ t.desc }}</div>
+                <div v-if="t.obs" class="text-muted" style="font-size:.75rem;margin-top:.1rem">{{ t.obs }}</div>
+              </td>
+              <td>
+                <span class="cat-tag">{{ t.cat }}</span>
+              </td>
+              <td class="text-muted text-sm">{{ t.cli || '—' }}</td>
+              <td>
+                <span class="badge"
+                  :class="t.tipo==='entrada' ? (t.st==='pendente' ? 'badge-warning' : 'badge-accent') : 'badge-danger'">
+                  {{ t.tipo==='entrada' ? (t.st==='pendente' ? 'Pendente' : 'Recebido') : 'Saída' }}
+                </span>
+              </td>
+              <td style="text-align:right;font-weight:700;font-family:var(--font-display)"
+                :style="{ color: t.tipo==='entrada'?'var(--accent)':'var(--status-danger)' }">
+                {{ t.tipo==='entrada'?'+':'-' }}{{ fmt(t.val) }}
+              </td>
+              <td>
+                <div class="tx-actions">
+                  <button v-if="t.tipo==='entrada'&&t.st==='pendente'"
+                    class="btn btn-ghost btn-icon btn-sm"
+                    style="color:var(--accent)"
+                    title="Confirmar recebimento"
+                    @click="confirmarRecebimento(t.id)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button class="btn btn-ghost btn-icon btn-sm" title="Editar" @click="editTx(t)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--status-danger)" title="Remover" @click="rmTx(t.id)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
+
   </div>
 
   <!-- MODAL TRANSAÇÃO -->
-  <div class="mo" :class="{ open: modalOpen }">
-    <div class="mo-box">
-      <h3>{{ editId ? (modalTipo==='entrada'?'Editar Receita':'Editar Despesa') : (modalTipo==='entrada'?'Nova Receita':'Nova Despesa') }}</h3>
-      <div class="fg"><label>Descrição *</label><input v-model="mForm.desc" class="fi" placeholder="Ex: Site Iron House — 50% entrada" /></div>
-      <div class="fg"><label>Valor (R$) *</label><input v-model.number="mForm.val" class="fi" type="number" placeholder="797.00" step="0.01" min="0" /></div>
-      <div class="fg"><label>Data *</label><input v-model="mForm.data" class="fi" type="date" /></div>
-      <div class="fg"><label>Categoria</label>
-        <select v-model="mForm.cat" class="fs">
-          <option>Site</option><option>Google Meu Negócio</option><option>Tráfego</option>
-          <option>Automação</option><option>Manutenção</option><option>Ferramentas</option>
-          <option>Assinatura</option><option>Marketing</option><option>Outros</option>
-        </select>
+  <div v-show="modalOpen" class="drawer-bg" @click="modalOpen=false"></div>
+  <div v-show="modalOpen" class="drawer">
+    <div class="drawer-header">
+      <h3 class="drawer-title">
+        {{ editId ? (modalTipo==='entrada'?'Editar Receita':'Editar Despesa') : (modalTipo==='entrada'?'Nova Receita':'Nova Despesa') }}
+      </h3>
+      <button class="btn btn-ghost btn-icon" @click="modalOpen=false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <p class="drawer-section-title">Informações</p>
+        <div class="form-group"><label class="form-label">Descrição *</label><input v-model="mForm.desc" class="form-input" placeholder="Ex: Site Iron House — 50% entrada" /></div>
+        <div class="form-group"><label class="form-label">Valor (R$) *</label><input v-model.number="mForm.val" class="form-input" type="number" placeholder="797.00" step="0.01" min="0" /></div>
+        <div class="form-group"><label class="form-label">Data *</label><input v-model="mForm.data" class="form-input" type="date" /></div>
+        <div class="form-group"><label class="form-label">Cliente</label><input v-model="mForm.cli" class="form-input" placeholder="Nome do cliente" /></div>
       </div>
-      <div class="fg"><label>Recorrência</label>
-        <select v-model="mForm.rec" class="fs">
-          <option value="unica">Pagamento único</option>
-          <option value="mensal">Mensal</option>
-          <option value="anual">Anual</option>
-        </select>
+      <div class="drawer-section">
+        <p class="drawer-section-title">Classificação</p>
+        <div class="form-group">
+          <label class="form-label">Categoria</label>
+          <select v-model="mForm.cat" class="form-select">
+            <option>Site</option><option>Google Meu Negócio</option><option>Tráfego</option>
+            <option>Automação</option><option>Manutenção</option><option>Ferramentas</option>
+            <option>Assinatura</option><option>Marketing</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recorrência</label>
+          <select v-model="mForm.rec" class="form-select">
+            <option value="unica">Pagamento único</option>
+            <option value="mensal">Mensal</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+        <div v-if="modalTipo==='entrada'" class="form-group">
+          <label class="form-label">Status</label>
+          <select v-model="mForm.st" class="form-select">
+            <option value="recebido">Recebido</option>
+            <option value="pendente">Pendente</option>
+          </select>
+        </div>
       </div>
-      <div v-if="modalTipo==='entrada'" class="fg"><label>Status</label>
-        <select v-model="mForm.st" class="fs">
-          <option value="recebido">Recebido</option>
-          <option value="pendente">Pendente</option>
-        </select>
+      <div class="drawer-section">
+        <p class="drawer-section-title">Extras</p>
+        <div class="form-group"><label class="form-label">Observação</label><input v-model="mForm.obs" class="form-input" placeholder="Parcela, vencimento, nota..." /></div>
       </div>
-      <div class="fg"><label>Cliente</label><input v-model="mForm.cli" class="fi" placeholder="Nome do cliente" /></div>
-      <div class="fg"><label>Observação</label><input v-model="mForm.obs" class="fi" placeholder="Parcela, vencimento..." /></div>
-      <div class="mo-acts">
-        <button class="btn btn-g" @click="saveTx">Salvar</button>
-        <button class="btn btn-gh" @click="modalOpen=false">Cancelar</button>
-      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" @click="modalOpen=false">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" @click="saveTx">Salvar</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useFinStore } from '@/stores/fin'
 import { useSaving } from '@/composables/useSaving'
+import { useTheme } from '@/composables/useTheme'
 
-const fin = useFinStore()
+const fin  = useFinStore()
 const { run, toast } = useSaving()
-const fmt = fin.fmt
+const { theme } = useTheme()
+const fmt  = fin.fmt
 
-const mesFil = ref('')
+const mesFil  = ref('')
 const tipoFil = ref('')
-const catFil = ref('')
+const catFil  = ref('')
+const sortKey = ref('data')
+const sortDir = ref('desc')
 
 const chartMen = ref(null)
 const chartCat = ref(null)
 let charts = {}
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+const CHART_FONT = "'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif"
 const cats = ['Site','Google Meu Negócio','Tráfego','Automação','Manutenção','Ferramentas','Assinatura','Marketing','Outros']
 
 const mesesDisponiveis = computed(() => {
@@ -151,51 +232,72 @@ const mesesDisponiveis = computed(() => {
   })
 })
 
+const f = computed(() => fin.calcPeriodo(mesFil.value))
+
 const listaFiltrada = computed(() => {
   let lista = fin.fin
-  if (mesFil.value) lista = lista.filter(t => t.data.includes(mesFil.value))
+  if (mesFil.value)  lista = lista.filter(t => t.data?.includes(mesFil.value))
   if (tipoFil.value) lista = lista.filter(t => t.tipo === tipoFil.value)
-  if (catFil.value) lista = lista.filter(t => t.cat === catFil.value)
+  if (catFil.value)  lista = lista.filter(t => t.cat === catFil.value)
   return lista
 })
 
-const f = computed(() => fin.calcPeriodo(mesFil.value))
+const listaOrdenada = computed(() => {
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  return [...listaFiltrada.value].sort((a, b) => {
+    const va = a[sortKey.value] ?? ''
+    const vb = b[sortKey.value] ?? ''
+    if (sortKey.value === 'val') return (Number(va) - Number(vb)) * dir
+    return String(va).localeCompare(String(vb), 'pt-BR') * dir
+  })
+})
+
+function toggleSort(key) {
+  if (sortKey.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  else { sortKey.value = key; sortDir.value = 'desc' }
+}
+
+function fmtData(d) {
+  if (!d) return '—'
+  const [y, m, day] = d.split('-')
+  return `${day}/${m}/${y.slice(2)}`
+}
 
 // Modal
 const modalOpen = ref(false)
 const modalTipo = ref('entrada')
-const editId = ref('')
+const editId    = ref('')
 const mForm = ref({ desc:'', val:'', data:'', cat:'Site', rec:'unica', st:'recebido', cli:'', obs:'' })
 
-function openModal(tipo, rec = 'unica') {
+function openModal(tipo) {
   editId.value = ''
   modalTipo.value = tipo
-  mForm.value = { desc:'', val:'', data: new Date().toISOString().split('T')[0], cat:'Site', rec, st:'recebido', cli:'', obs:'' }
+  mForm.value = { desc:'', val:'', data: new Date().toISOString().split('T')[0], cat:'Site', rec:'unica', st:'recebido', cli:'', obs:'' }
   modalOpen.value = true
 }
 
 function editTx(t) {
   editId.value = t.id
   modalTipo.value = t.tipo
-  mForm.value = { desc:t.desc, val:t.val, data:t.data, cat:t.cat, rec:t.rec||'unica', st:t.st, cli:t.cli||'', obs:t.obs||'' }
+  mForm.value = { desc:t.desc, val:t.val, data:t.data, cat:t.cat||'Site', rec:t.rec||'unica', st:t.st||'recebido', cli:t.cli||'', obs:t.obs||'' }
   modalOpen.value = true
 }
 
 async function saveTx() {
   if (!mForm.value.desc || !mForm.value.val || !mForm.value.data) {
-    toast('Preencha descrição, valor e data', 'err'); return
+    toast('Preencha descrição, valor e data', 'error'); return
   }
   const tx = {
     id: editId.value || 't' + Date.now(),
     tipo: modalTipo.value,
     desc: mForm.value.desc,
-    cat: mForm.value.cat,
-    val: mForm.value.val,
+    cat:  mForm.value.cat,
+    val:  mForm.value.val,
     data: mForm.value.data,
-    rec: mForm.value.rec,
-    st: modalTipo.value === 'entrada' ? mForm.value.st : 'pago',
-    cli: mForm.value.cli,
-    obs: mForm.value.obs
+    rec:  mForm.value.rec,
+    st:   modalTipo.value === 'entrada' ? mForm.value.st : 'pago',
+    cli:  mForm.value.cli,
+    obs:  mForm.value.obs
   }
   if (editId.value) {
     const idx = fin.fin.findIndex(t => t.id === editId.value)
@@ -203,49 +305,62 @@ async function saveTx() {
   } else {
     fin.fin.unshift(tx)
   }
-  await run(() => fin.upsert(tx), editId.value ? 'Atualizado ✓' : 'Salvo ✓')
+  await run(() => fin.upsert(tx), editId.value ? 'Atualizado' : 'Salvo')
   modalOpen.value = false
 }
 
 async function rmTx(id) {
   if (!confirm('Remover esta transação?')) return
   fin.fin = fin.fin.filter(t => t.id !== id)
-  await run(() => fin.remove(id), 'Removido ✓')
+  await run(() => fin.remove(id), 'Removido')
 }
 
 async function confirmarRecebimento(id) {
   const tx = fin.fin.find(t => t.id === id)
   if (!tx) return
-  tx.st = 'recebido'
+  tx.st   = 'recebido'
   tx.data = new Date().toISOString().split('T')[0]
-  await run(() => fin.upsert(tx), '✓ Recebimento confirmado!')
+  await run(() => fin.upsert(tx), 'Recebimento confirmado')
+}
+
+// Charts
+function chartColors() {
+  const dark = theme.value === 'dark'
+  return {
+    grid:   dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+    tick:   dark ? '#555' : '#9ca3af',
+    legend: dark ? '#777' : '#6b7280',
+  }
 }
 
 function renderCharts() {
   if (!window.Chart) return
+  window.Chart.defaults.font.family = CHART_FONT
+  window.Chart.defaults.font.size   = 11
   nextTick(() => {
+    const c = chartColors()
     if (chartMen.value) {
       if (charts.men) charts.men.destroy()
-      const r = fin.mRec
-      const s = Array.from({ length: 12 }, (_, i) => {
+      const rec = fin.mRec
+      const sai = Array.from({ length: 12 }, (_, i) => {
         const m = String(i+1).padStart(2,'0')
-        return fin.fin.filter(t => t.tipo==='saida' && t.data.includes('-'+m+'-')).reduce((a,t)=>a+Number(t.val),0)
+        return fin.fin.filter(t => t.tipo==='saida' && t.data?.includes('-'+m+'-')).reduce((a,t) => a+Number(t.val), 0)
       })
       charts.men = new window.Chart(chartMen.value, {
         type: 'bar',
         data: {
           labels: MESES,
           datasets: [
-            { label:'Receita', data:r, backgroundColor:'rgba(34,197,94,.35)', borderColor:'#22c55e', borderWidth:2, borderRadius:5 },
-            { label:'Despesa', data:s, backgroundColor:'rgba(239,68,68,.35)', borderColor:'#ef4444', borderWidth:2, borderRadius:5 }
+            { label:'Receita', data:rec, backgroundColor:'rgba(34,197,94,.2)', borderColor:'#22c55e', borderWidth:2, borderRadius:6, borderSkipped:false },
+            { label:'Despesa', data:sai, backgroundColor:'rgba(239,68,68,.2)', borderColor:'#ef4444', borderWidth:2, borderRadius:6, borderSkipped:false }
           ]
         },
         options: {
           responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{ labels:{ color:'#666', boxWidth:11, font:{ size:10 } } } },
+          plugins:{ legend:{ labels:{ color:c.legend, boxWidth:10, font:{ size:11, family:CHART_FONT } } } },
           scales:{
-            x:{ grid:{ color:'rgba(255,255,255,.04)' }, ticks:{ color:'#555', font:{ size:10 } } },
-            y:{ grid:{ color:'rgba(255,255,255,.04)' }, ticks:{ color:'#555', font:{ size:10 }, callback:v=>'R$'+v } }
+            x:{ grid:{ color:c.grid }, ticks:{ color:c.tick, font:{ size:10, family:CHART_FONT } } },
+            y:{ grid:{ color:c.grid }, ticks:{ color:c.tick, font:{ size:10, family:CHART_FONT }, callback:v=>'R$'+v } }
           }
         }
       })
@@ -257,9 +372,9 @@ function renderCharts() {
         type: 'doughnut',
         data: {
           labels: gd.labels,
-          datasets: [{ data:gd.vals, backgroundColor:['rgba(239,68,68,.6)','rgba(245,158,11,.6)','rgba(59,130,246,.6)','rgba(139,92,246,.6)','rgba(34,197,94,.6)'], borderWidth:0 }]
+          datasets: [{ data:gd.vals, backgroundColor:['rgba(224,85,85,.7)','rgba(232,168,56,.7)','rgba(91,141,238,.7)','rgba(139,92,246,.7)','rgba(34,197,94,.7)','rgba(20,184,166,.7)'], borderWidth:0, hoverOffset:6 }]
         },
-        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ color:'#666', boxWidth:11, font:{ size:10 } } } } }
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ color:c.legend, boxWidth:10, font:{ size:11, family:CHART_FONT }, padding:14 } } } }
       })
     }
   })
@@ -275,6 +390,54 @@ onMounted(() => {
     renderCharts()
   }
 })
-
+onUnmounted(() => { Object.values(charts).forEach(c => c?.destroy()) })
 watch(() => fin.fin.length, renderCharts)
+watch(theme, renderCharts)
 </script>
+
+<style scoped>
+/* Charts */
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; min-width:0; }
+.chart-card { display:flex; flex-direction:column; gap:.875rem; min-width:0; }
+.chart-title { font-size:.9375rem; font-weight:700; color:var(--text-primary); }
+.chart-wrap  { height:200px; position:relative; min-width:0; }
+
+/* Card header com filtros */
+.fin-filters { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+
+/* Categoria tag */
+.cat-tag {
+  display:inline-block;
+  font-size:.7rem; font-weight:600;
+  background:var(--bg-overlay);
+  color:var(--text-tertiary);
+  border:1px solid var(--border-default);
+  border-radius:var(--radius-full);
+  padding:.15rem .5rem;
+  white-space:nowrap;
+}
+
+/* Ações na tabela */
+.tx-actions { display:flex; align-items:center; gap:.2rem; justify-content:flex-end; }
+.tx-table-row:hover .tx-actions { opacity:1; }
+
+/* Sort */
+.th-sort { cursor:pointer; user-select:none; white-space:nowrap; }
+.th-sort:hover { color:var(--accent); }
+.sort-icon { font-size:.65rem; color:var(--text-tertiary); margin-left:.2rem; }
+
+/* Drawer padrão */
+.drawer-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:800; }
+.drawer { position:fixed; top:0; right:0; height:100vh; width:400px; max-width:95vw; background:var(--bg-elevated); border-left:1px solid var(--border-default); box-shadow:var(--shadow-lg); z-index:801; display:flex; flex-direction:column; overflow:hidden; }
+.drawer-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-bottom:1px solid var(--border-default); flex-shrink:0; }
+.drawer-title  { font-size:.9375rem; font-weight:700; color:var(--text-primary); }
+.drawer-body   { flex:1; overflow-y:auto; padding:.875rem 1.25rem; display:flex; flex-direction:column; gap:.875rem; }
+.drawer-section { display:flex; flex-direction:column; gap:.5rem; padding-bottom:.875rem; border-bottom:1px solid var(--border-subtle); }
+.drawer-section:last-child { border-bottom:none; }
+.drawer-section-title { font-size:.62rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--text-tertiary); margin:0; }
+.drawer-footer { display:flex; align-items:center; gap:.5rem; padding:.875rem 1.25rem; border-top:1px solid var(--border-default); flex-shrink:0; }
+
+@media (max-width:900px)  { .charts-row { grid-template-columns:1fr; } }
+@media (max-width:1100px) { .kpi-grid--5 { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:768px)  { .page-layout { padding:1rem 1rem 5rem; } .drawer { width:100%; } }
+</style>

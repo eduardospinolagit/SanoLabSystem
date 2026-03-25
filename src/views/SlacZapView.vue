@@ -138,7 +138,47 @@
 
       <!-- Composer -->
       <div class="sz-composer">
-        <div class="sz-composer-inner">
+
+        <!-- Gravando -->
+        <div v-if="isRecording" class="sz-recording-bar">
+          <button class="sz-rec-cancel" @click="cancelRecording" aria-label="Cancelar">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="sz-rec-center">
+            <span class="sz-rec-dot"></span>
+            <div class="sz-rec-waves">
+              <span v-for="n in 8" :key="n" class="sz-rec-wave"></span>
+            </div>
+            <span class="sz-rec-time">{{ fmtDuration(recTime) }}</span>
+          </div>
+          <button class="sz-rec-stop" @click="stopRecording" aria-label="Parar gravação">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          </button>
+        </div>
+
+        <!-- Preview de áudio gravado -->
+        <div v-else-if="audioBlob" class="sz-audio-preview-bar">
+          <audio ref="audioEl" :src="audioUrl" style="display:none"
+            @play="isPlaying = true" @pause="isPlaying = false" @ended="isPlaying = false; audioProgress = 0"
+            @timeupdate="audioProgress = audioEl?.duration ? (audioEl.currentTime / audioEl.duration * 100) : 0" />
+          <button class="sz-ap-cancel" @click="cancelRecording" aria-label="Descartar">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <button class="sz-ap-play" @click="toggleAudioPlay" :aria-label="isPlaying ? 'Pausar' : 'Reproduzir'">
+            <svg v-if="isPlaying" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <div class="sz-ap-track">
+            <div class="sz-ap-progress" :style="{ width: audioProgress + '%' }"></div>
+          </div>
+          <span class="sz-ap-dur">{{ fmtDuration(recTime) }}</span>
+          <button class="sz-ap-send" @click="sendAudio" aria-label="Enviar áudio">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+
+        <!-- Normal -->
+        <div v-else class="sz-composer-inner">
           <div class="sz-attach-wrap">
             <button class="sz-composer-btn" :class="{ 'sz-composer-btn--open': showAttachMenu }"
               @click.stop="toggleAttachMenu" aria-label="Anexar arquivo">
@@ -158,8 +198,8 @@
                   Documento
                 </button>
                 <button class="sz-attach-item" @click="triggerFile('audio')">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                  Áudio
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Arquivo de áudio
                 </button>
               </div>
             </Transition>
@@ -177,7 +217,7 @@
             <button v-if="novaMsg.trim() || selectedFile" class="sz-send-btn" @click="enviar" :disabled="enviando" aria-label="Enviar">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
-            <button v-else class="sz-mic-btn" aria-label="Áudio">
+            <button v-else class="sz-mic-btn" @click="startRecording" aria-label="Gravar áudio">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             </button>
           </Transition>
@@ -336,6 +376,20 @@ const fileCaption     = ref('')
 const fileInputImg    = ref(null)
 const fileInputDoc    = ref(null)
 const fileInputAudio  = ref(null)
+
+// Recording
+let _mediaRecorder = null
+let _audioChunks   = []
+let _audioStream   = null
+let _recTimer      = null
+
+const isRecording   = ref(false)
+const recTime       = ref(0)
+const audioBlob     = ref(null)
+const audioUrl      = ref(null)
+const audioEl       = ref(null)
+const isPlaying     = ref(false)
+const audioProgress = ref(0)
 
 // ── Resize ──
 function onResize() { isMobile.value = window.innerWidth < 768 }
@@ -500,6 +554,72 @@ function exportarConversa() {
   toast('Conversa exportada', 'ok')
 }
 
+// ── Recording ──
+function fmtDuration(s) {
+  return `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
+}
+
+async function startRecording() {
+  try {
+    _audioStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    _audioChunks = []
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+        ? 'audio/ogg;codecs=opus'
+        : 'audio/webm'
+    _mediaRecorder = new MediaRecorder(_audioStream, { mimeType })
+    _mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) _audioChunks.push(e.data) }
+    _mediaRecorder.onstop = () => {
+      const blob = new Blob(_audioChunks, { type: mimeType.split(';')[0] })
+      audioBlob.value = blob
+      audioUrl.value = URL.createObjectURL(blob)
+      _audioStream?.getTracks().forEach(t => t.stop())
+      _audioStream = null
+    }
+    _mediaRecorder.start(100)
+    isRecording.value = true
+    recTime.value = 0
+    _recTimer = setInterval(() => { recTime.value++; if (recTime.value >= 120) stopRecording() }, 1000)
+  } catch (e) {
+    toast('Microfone indisponível: ' + (e?.message || ''), 'error')
+  }
+}
+
+function stopRecording() {
+  clearInterval(_recTimer)
+  if (_mediaRecorder?.state !== 'inactive') _mediaRecorder?.stop()
+  isRecording.value = false
+}
+
+function cancelRecording() {
+  clearInterval(_recTimer)
+  if (_mediaRecorder?.state !== 'inactive') _mediaRecorder?.stop()
+  _audioStream?.getTracks().forEach(t => t.stop()); _audioStream = null
+  isRecording.value = false
+  if (audioUrl.value) { URL.revokeObjectURL(audioUrl.value); audioUrl.value = null }
+  audioBlob.value = null; isPlaying.value = false; audioProgress.value = 0
+}
+
+function toggleAudioPlay() {
+  if (!audioEl.value) return
+  if (isPlaying.value) audioEl.value.pause()
+  else audioEl.value.play()
+}
+
+async function sendAudio() {
+  if (!audioBlob.value) return
+  const blob = audioBlob.value
+  const ext = blob.type.includes('ogg') ? 'ogg' : 'webm'
+  const dataUrl = await new Promise(resolve => {
+    const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob)
+  })
+  selectedFile.value = { tipo: 'audio', nome: `audio_${Date.now()}.${ext}`, dataUrl }
+  if (audioUrl.value) { URL.revokeObjectURL(audioUrl.value); audioUrl.value = null }
+  audioBlob.value = null; isPlaying.value = false; audioProgress.value = 0
+  await _enviarArquivo()
+}
+
 // ── Attachment ──
 function toggleAttachMenu() { showAttachMenu.value = !showAttachMenu.value }
 
@@ -596,6 +716,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', onResize)
   document.removeEventListener('click', onDocClick, true)
   if (realtimeChannel) sb.removeChannel(realtimeChannel)
+  cancelRecording()
 })
 </script>
 
@@ -1013,6 +1134,90 @@ onUnmounted(() => {
 .sz-empty-icon { margin-bottom: .25rem; }
 .sz-empty-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
 .sz-empty-sub { font-size: .83rem; color: var(--text-tertiary); }
+
+/* ── Recording bar ── */
+.sz-recording-bar {
+  display: flex; align-items: center; gap: .65rem; padding: .3rem 0; min-height: 42px;
+}
+.sz-rec-cancel {
+  width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
+  border: none; background: var(--bg-elevated); color: var(--text-secondary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; flex-shrink: 0;
+}
+.sz-rec-cancel:hover { background: var(--bg-overlay); }
+.sz-rec-stop {
+  width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
+  border: none; background: var(--status-danger); color: #fff;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform .15s;
+}
+.sz-rec-stop:hover { transform: scale(1.08); }
+.sz-rec-center {
+  flex: 1; display: flex; align-items: center; gap: .55rem; min-width: 0;
+}
+.sz-rec-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--status-danger); flex-shrink: 0;
+  animation: sz-pulse-rec .9s ease-in-out infinite;
+}
+@keyframes sz-pulse-rec { 0%, 100% { opacity: 1; transform: scale(1) } 50% { opacity: .3; transform: scale(.7) } }
+.sz-rec-waves {
+  flex: 1; display: flex; align-items: center; gap: 3px; height: 22px;
+}
+.sz-rec-wave {
+  width: 3px; border-radius: 3px; background: var(--status-danger);
+  animation: sz-wave .75s ease-in-out infinite;
+}
+.sz-rec-wave:nth-child(1) { height: 6px;  animation-delay: 0s; }
+.sz-rec-wave:nth-child(2) { height: 12px; animation-delay: .1s; }
+.sz-rec-wave:nth-child(3) { height: 18px; animation-delay: .2s; }
+.sz-rec-wave:nth-child(4) { height: 14px; animation-delay: .15s; }
+.sz-rec-wave:nth-child(5) { height: 20px; animation-delay: .05s; }
+.sz-rec-wave:nth-child(6) { height: 14px; animation-delay: .25s; }
+.sz-rec-wave:nth-child(7) { height: 10px; animation-delay: .1s; }
+.sz-rec-wave:nth-child(8) { height: 6px;  animation-delay: .3s; }
+@keyframes sz-wave { 0%, 100% { transform: scaleY(.35); opacity: .55 } 50% { transform: scaleY(1); opacity: 1 } }
+.sz-rec-time {
+  font-size: .88rem; font-weight: 600; color: var(--status-danger);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* ── Audio preview bar ── */
+.sz-audio-preview-bar {
+  display: flex; align-items: center; gap: .5rem; padding: .3rem 0; min-height: 42px;
+}
+.sz-ap-cancel {
+  width: 34px; height: 34px; min-width: 34px; border-radius: 50%;
+  border: none; background: var(--bg-elevated); color: var(--text-secondary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; flex-shrink: 0;
+}
+.sz-ap-cancel:hover { background: var(--bg-overlay); }
+.sz-ap-play {
+  width: 34px; height: 34px; min-width: 34px; border-radius: 50%;
+  border: none; background: var(--accent); color: #000;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform .15s;
+}
+.sz-ap-play:hover { transform: scale(1.08); }
+.sz-ap-track {
+  flex: 1; height: 4px; background: var(--bg-overlay); border-radius: 4px; overflow: hidden;
+}
+.sz-ap-progress {
+  height: 100%; background: var(--accent); border-radius: 4px; transition: width .1s linear;
+}
+.sz-ap-dur {
+  font-size: .78rem; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.sz-ap-send {
+  width: 34px; height: 34px; min-width: 34px; border-radius: 50%;
+  border: none; background: var(--accent); color: #000;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform .15s;
+}
+.sz-ap-send:hover { transform: scale(1.08); }
 
 /* ── Responsive ── */
 @media (max-width: 767px) {

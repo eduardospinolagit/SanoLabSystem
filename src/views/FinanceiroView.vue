@@ -11,6 +11,10 @@
           <option value="">Todo período</option>
           <option v-for="m in mesesDisponiveis" :key="m.val" :value="m.val">{{ m.label }}</option>
         </select>
+        <button class="btn btn-ghost" @click="exportarCSV">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
         <button class="btn btn-secondary" @click="openModal('saida')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Despesa
@@ -378,6 +382,30 @@ function renderCharts() {
       })
     }
   })
+}
+
+function exportarCSV() {
+  const header = ['Data', 'Tipo', 'Descrição', 'Categoria', 'Cliente', 'Status', 'Recorrência', 'Valor', 'Observação']
+  const rows = fin.fin.map(t => [
+    t.data || '',
+    t.tipo === 'entrada' ? 'Receita' : 'Despesa',
+    t.desc || '',
+    t.cat  || '',
+    t.cli  || '',
+    t.tipo === 'entrada' ? (t.st === 'pendente' ? 'Pendente' : 'Recebido') : 'Pago',
+    t.rec  || 'unica',
+    String(t.val || 0).replace('.', ','),
+    t.obs  || ''
+  ])
+  const csv = [header, ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+    .join('
+')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `financeiro-slac-${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
 }
 
 onMounted(() => {

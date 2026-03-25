@@ -7,9 +7,16 @@
         <p class="page-subtitle">Gerencie seu pipeline de vendas</p>
       </div>
       <div class="page-actions">
-        <button class="btn btn-secondary btn-sm" @click="pedirNotificacao">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          Alertas
+        <button
+          class="btn btn-sm"
+          :class="notifAtiva ? 'btn-notif-on' : 'btn-secondary'"
+          :disabled="notifAtiva"
+          @click="pedirNotificacao"
+          :title="notifAtiva ? 'Notificações ativadas' : 'Ativar alertas de follow-up'"
+        >
+          <svg v-if="!notifAtiva" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {{ notifAtiva ? 'Alertas ativos' : 'Alertas' }}
         </button>
         <button class="btn btn-primary" @click="openNew()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -860,11 +867,21 @@ const listaRelead = computed(() =>
     .sort((a, b) => new Date(a.relead_data) - new Date(b.relead_data))
 )
 
+// Estado das notificações
+const notifAtiva = ref(
+  typeof Notification !== 'undefined' && Notification.permission === 'granted'
+)
+
 async function pedirNotificacao() {
-  if(!('Notification' in window)){toast('Notificações não suportadas','err');return}
-  const perm=await Notification.requestPermission()
-  if(perm==='granted') toast('Notificações ativadas ✓','ok')
-  else toast('Permissão negada','err')
+  if (!('Notification' in window)) { toast('Notificações não suportadas', 'error'); return }
+  if (Notification.permission === 'granted') { notifAtiva.value = true; return }
+  const perm = await Notification.requestPermission()
+  if (perm === 'granted') {
+    notifAtiva.value = true
+    toast('Notificações ativadas', 'ok')
+  } else {
+    toast('Permissão negada', 'error')
+  }
 }
 </script>
 
@@ -1044,6 +1061,16 @@ async function pedirNotificacao() {
 .fu-relead{border-color:rgba(139,92,246,.25);}
 .fu-relead:hover{border-color:rgba(139,92,246,.5);}
 .dot-purple{background:#8b5cf6;}
+
+/* Botão alertas ativo */
+.btn-notif-on {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  cursor: default;
+  opacity: 1;
+}
+.btn-notif-on:disabled { opacity: 1; cursor: default; }
 
 @media(max-width:1200px){.kanban-board{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:768px){.kanban-board{grid-template-columns:repeat(2,1fr);}.drawer{width:100%;}.fu-card{flex-wrap:wrap;}.card-modal-grid{grid-template-columns:1fr;}}

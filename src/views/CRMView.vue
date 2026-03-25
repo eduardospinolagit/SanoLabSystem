@@ -526,7 +526,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import FecharNegocioModal from '@/components/crm/FecharNegocioModal.vue'
 import { useLeadsStore, ETAPAS } from '@/stores/leads'
 import { useWorkStore } from '@/stores/work'
@@ -950,11 +950,14 @@ const listaRelead = computed(() =>
 )
 
 // Estado das notificações
-const notifAtiva = ref(
-  typeof Notification !== 'undefined' && Notification.permission === 'granted'
-)
+const notifAtiva = ref(false)
 
-const { subscribe } = usePushNotifications()
+const { subscribe, getSubscriptionStatus } = usePushNotifications()
+
+onMounted(async () => {
+  const s = await getSubscriptionStatus()
+  notifAtiva.value = s === 'granted'
+})
 
 async function pedirNotificacao() {
   if (notifAtiva.value) return

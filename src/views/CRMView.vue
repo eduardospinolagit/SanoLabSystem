@@ -648,7 +648,7 @@ async function waEnviar() {
     waMensagem.value = ''
     waTemplateId.value = ''
     toast('Mensagem enviada!', 'ok')
-  } catch (e: any) {
+  } catch (e) {
     toast('Erro: ' + (e?.message || String(e)), 'err')
   } finally {
     waEnviando.value = false

@@ -1,9 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const ZAPI_INSTANCE = Deno.env.get('ZAPI_INSTANCE_ID')!
-const ZAPI_TOKEN    = Deno.env.get('ZAPI_TOKEN')!
-const SB_URL        = Deno.env.get('SUPABASE_URL')!
-const SB_SERVICE    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ZAPI_INSTANCE     = Deno.env.get('ZAPI_INSTANCE_ID')!
+const ZAPI_TOKEN        = Deno.env.get('ZAPI_TOKEN')!
+const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN')!
+const SB_URL            = Deno.env.get('SUPABASE_URL')!
+const SB_SERVICE        = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 async function log(sb: ReturnType<typeof createClient>, level: string, message: string, data?: unknown) {
   try {
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
     // Envia pelo Z-API
     const zapiRes = await fetch(zapiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Client-Token': ZAPI_CLIENT_TOKEN },
       body: JSON.stringify({ phone: telZapi, message: mensagem }),
     })
 

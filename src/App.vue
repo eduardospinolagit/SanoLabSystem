@@ -6,22 +6,25 @@
 
   <router-view v-else />
 
-  <!-- Notificações estilo iOS — pill único com key para forçar re-animação -->
+  <!-- iOS pill: saving -->
+  <div v-show="saving" class="ios-pill ios-pill--saving">
+    <div class="ios-spinner"></div>
+    <span>Salvando</span>
+  </div>
+
+  <!-- iOS pill: toast (montado separado para animação limpa) -->
   <Transition name="ios-pill">
-    <div v-if="pillVisible" :key="pillKey" class="ios-pill" :class="pillClass">
-      <div v-if="saving" class="ios-spinner"></div>
-      <template v-else>
-        <svg v-if="toast.type==='ok'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        <svg v-else-if="toast.type==='error'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </template>
-      <span>{{ saving ? 'Salvando' : toast.message }}</span>
+    <div v-if="toast.show" class="ios-pill" :class="`ios-pill--${toast.type}`">
+      <svg v-if="toast.type==='ok'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg v-else-if="toast.type==='error'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>{{ toast.message }}</span>
     </div>
   </Transition>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, provide, ref } from 'vue'
+import { onMounted, onUnmounted, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useFinStore } from '@/stores/fin'
@@ -41,13 +44,9 @@ const { initTheme } = useTheme()
 const toast = ref({ show: false, message: '', type: 'ok' })
 let toastTimer = null
 function showToast(message, type = 'ok') {
-  // Se o pill de saving ainda está visível, espera ele sumir antes de mostrar o toast
-  const delay = saving.value ? 320 : 0
   clearTimeout(toastTimer)
-  setTimeout(() => {
-    toast.value = { show: true, message, type }
-    toastTimer = setTimeout(() => { toast.value.show = false }, 2600)
-  }, delay)
+  toast.value = { show: true, message, type }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 2600)
 }
 provide('toast', showToast)
 
@@ -64,11 +63,6 @@ function hideSaving() {
   saving.value = false
 }
 provide('saving', { showSaving, hideSaving })
-
-// ── Pill: único elemento com key dinâmica ──
-const pillVisible = computed(() => saving.value || toast.value.show)
-const pillClass   = computed(() => saving.value ? 'ios-pill--saving' : `ios-pill--${toast.value.type}`)
-const pillKey     = computed(() => saving.value ? 'saving' : `toast-${toast.value.type}-${toast.value.message}`)
 
 // ── Recarregar dados das stores ──
 async function reloadData() {

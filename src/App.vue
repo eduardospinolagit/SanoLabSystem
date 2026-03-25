@@ -6,14 +6,11 @@
 
   <router-view v-else />
 
-  <!-- Teleport garante que os pills ficam direto no body, fora de qualquer layout -->
   <Teleport to="body">
-    <!-- Saving -->
     <div v-show="saving" class="ios-pill ios-pill--saving">
       <div class="ios-spinner"></div>
       <span>Salvando</span>
     </div>
-    <!-- Toast -->
     <Transition name="ios-pill">
       <div v-if="toast.show" class="ios-pill" :class="`ios-pill--${toast.type}`">
         <svg v-if="toast.type==='ok'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -66,62 +63,36 @@ function hideSaving() {
 }
 provide('saving', { showSaving, hideSaving })
 
-// ── Recarregar dados das stores ──
+// ── Sessão ──
 async function reloadData() {
   if (!auth.user) return
-  try {
-    await Promise.all([fin.load(), leads.load(), mapa.load()])
-  } catch (e) {
-    console.warn('[SLAC] reload data falhou:', e)
-  }
+  try { await Promise.all([fin.load(), leads.load(), mapa.load()]) }
+  catch (e) { console.warn('[SLAC] reload falhou:', e) }
 }
 
-// ── Voltar de inativo: refresh token + reload dados ──
 let lastHidden = 0
 async function handleVisibilityChange() {
-  if (document.visibilityState !== 'visible') {
-    lastHidden = Date.now()
-    return
-  }
-
+  if (document.visibilityState !== 'visible') { lastHidden = Date.now(); return }
   const awayMs = Date.now() - lastHidden
-
   try {
     const { data, error } = await sb.auth.getSession()
-    if (error || !data.session) {
-      await auth.logout()
-      router.push('/login')
-      return
-    }
-
-    // Sempre renova o token ao voltar
+    if (error || !data.session) { await auth.logout(); router.push('/login'); return }
     await sb.auth.refreshSession()
-
-    // Se ficou mais de 2 minutos fora, recarrega os dados
-    // (pode ter mudado algo enquanto estava em segundo plano)
-    if (awayMs > 2 * 60 * 1000) {
-      await reloadData()
-    }
-  } catch (e) {
-    console.warn('[SLAC] visibilitychange erro:', e)
-  }
+    if (awayMs > 2 * 60 * 1000) await reloadData()
+  } catch (e) { console.warn('[SLAC] visibility erro:', e) }
 }
+
+async function user_logout() { await auth.logout(); router.push('/login') }
 
 onMounted(async () => {
   initTheme()
   await auth.init()
   document.addEventListener('visibilitychange', handleVisibilityChange)
-
-  // Registrar DEPOIS do init para não interferir com o loading
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      if (router.currentRoute.value.path === '/login') {
-        router.push('/dashboard')
-      }
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session && router.currentRoute.value.path === '/login') {
+      router.push('/dashboard')
     }
-    if (event === 'SIGNED_OUT') {
-      router.push('/login')
-    }
+    if (event === 'SIGNED_OUT') router.push('/login')
   })
 })
 
@@ -131,6 +102,7 @@ onUnmounted(() => {
 </script>
 
 <style>
+/* ── Loading ── */
 .loading-screen {
   min-height: 100vh;
   display: flex; flex-direction: column;
@@ -140,43 +112,64 @@ onUnmounted(() => {
   font-family: var(--font-body); font-size: .9rem;
 }
 
-.toast-global {
-  position: fixed;
-  bottom: 1.5rem; right: 1.5rem;
-  z-index: 9999;
-  display: flex; align-items: center; gap: .625rem;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  padding: .75rem 1.125rem;
-  font-family: var(--font-body); font-size: .875rem;
-  color: var(--text-primary);
-  box-shadow: var(--shadow-lg);
-  min-width: 220px; max-width: 340px;
-}
-.toast--ok    { border-left: 3px solid var(--accent); }
-.toast--ok svg    { color: var(--accent); flex-shrink:0; }
-.toast--error { border-left: 3px solid var(--status-danger); }
-.toast--error svg { color: var(--status-danger); flex-shrink:0; }
-.toast--warn  { border-left: 3px solid var(--status-warning); }
-.toast--warn svg  { color: var(--status-warning); flex-shrink:0; }
-
-.saving-global {
-  position: fixed;
-  bottom: 1.5rem; left: 1.5rem;
-  z-index: 9998;
-  display: flex; align-items: center; gap: .5rem;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-left: 3px solid var(--status-info);
-  border-radius: var(--radius-lg);
-  padding: .75rem 1.125rem;
-  font-family: var(--font-body); font-size: .875rem;
-  color: var(--text-primary);
-  box-shadow: var(--shadow-lg);
+/* ── iOS pill ── */
+.ios-pill {
+  position: fixed !important;
+  top: 1.25rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 999999 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem 1.125rem;
+  border-radius: 99px;
+  font-family: var(--font-body);
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 4px 24px rgba(0,0,0,.3), 0 1px 4px rgba(0,0,0,.2);
+  color: #fff;
 }
 
-.toast-anim-enter-active, .toast-anim-leave-active { transition: all 200ms ease; }
-.toast-anim-enter-from { opacity: 0; transform: translateY(8px); }
-.toast-anim-leave-to   { opacity: 0; transform: translateY(8px); }
+[data-theme="light"] .ios-pill {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,.12), 0 1px 4px rgba(0,0,0,.08);
+  color: #1c1c1e;
+}
+
+.ios-pill--ok    svg { color: #30d158; flex-shrink: 0; }
+.ios-pill--error svg { color: #ff453a; flex-shrink: 0; }
+.ios-pill--warn  svg { color: #ffd60a; flex-shrink: 0; }
+.ios-pill--saving    { gap: .625rem; }
+
+[data-theme="light"] .ios-pill--ok    svg { color: #34c759; }
+[data-theme="light"] .ios-pill--error svg { color: #ff3b30; }
+[data-theme="light"] .ios-pill--warn  svg { color: #ff9f0a; }
+
+.ios-spinner {
+  width: 13px; height: 13px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.75px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  animation: ios-spin .65s linear infinite;
+}
+[data-theme="light"] .ios-spinner {
+  border-color: rgba(0,0,0,.15);
+  border-top-color: #1c1c1e;
+}
+@keyframes ios-spin { to { transform: rotate(360deg); } }
+
+/* Animação spring */
+.ios-pill-enter-active { transition: all 360ms cubic-bezier(.34,1.56,.64,1); }
+.ios-pill-leave-active { transition: all 200ms ease; }
+.ios-pill-enter-from   { opacity: 0; transform: translateX(-50%) translateY(-18px) scale(.85) !important; }
+.ios-pill-leave-to     { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(.93) !important; }
 </style>

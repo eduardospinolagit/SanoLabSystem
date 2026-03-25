@@ -62,7 +62,7 @@
         <button class="tab" :class="{ active: tab === 'followup' }" @click="tab = 'followup'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           Follow-up
-          <span v-if="leads.followUpsAlerta.length" class="tab-badge">{{ leads.followUpsAlerta.length }}</span>
+          <span v-if="listaFollowUp.length" class="tab-badge tab-badge--orange">{{ listaFollowUp.length }}</span>
         </button>
         <button class="tab" :class="{ active: tab === 'relead' }" @click="tab = 'relead'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -852,7 +852,9 @@ async function concluirFollowUp(lead) {
 }
 
 async function agendarFollowUp(lead, horas) {
-  const iso = new Date(Date.now() + horas * 60 * 60 * 1000).toISOString().slice(0, 16) + ':00'
+  const future = new Date(Date.now() + horas * 60 * 60 * 1000)
+  const pad = n => String(n).padStart(2, '0')
+  const iso = `${future.getFullYear()}-${pad(future.getMonth()+1)}-${pad(future.getDate())}T${pad(future.getHours())}:${pad(future.getMinutes())}:00`
   const idx = leads.leads.findIndex(l => l.id === lead.id)
   if (idx !== -1) leads.leads[idx] = { ...leads.leads[idx], proximo_followup: iso }
   run(() => leads.upsert({ ...lead, proximo_followup: iso, updated_at: new Date().toISOString() }), `Follow-up em ${horas}h agendado`)
@@ -1109,6 +1111,7 @@ async function pedirNotificacao() {
 
 /* Tab badge roxo */
 .tab-badge--purple{background:#8b5cf6;}
+.tab-badge--orange{background:var(--status-warning);}
 
 /* Botões novos */
 .btn-warning{background:rgba(245,158,11,.15);color:#d97706;border:1px solid rgba(245,158,11,.35);}

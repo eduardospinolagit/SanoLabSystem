@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { sb } from '@/lib/supabase'
-import { useAuthStore } from './auth'
+import { uid } from '@/utils/uid'
 
 export const useFinStore = defineStore('fin', () => {
   const fin = ref([])
@@ -9,14 +9,6 @@ export const useFinStore = defineStore('fin', () => {
   const meta = ref({ val: 2000, desc: '2 clientes Profissional', semanal: 500 })
 
   const fmt = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-  // Pega o user dinamicamente — nunca fica null por timing
-  function uid() {
-    const auth = useAuthStore()
-    if (!auth.user?.id) {
-      console.error('[SLAC] uid() chamado sem usuário autenticado. auth.user =', auth.user)
-      throw new Error('Usuário não autenticado')
-    }
     return auth.user.id
   }
 

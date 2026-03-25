@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { sb } from '@/lib/supabase'
-import { useAuthStore } from './auth'
+import { uid } from '@/utils/uid'
 
 export const ETAPAS = [
   { id: 'contato',    label: 'Contato',      color: '#3b82f6' },
@@ -15,14 +15,6 @@ export const ETAPAS = [
 export const useLeadsStore = defineStore('leads', () => {
   const leads = ref([])
   const conversas = ref([])
-
-  // Pega o user dinamicamente
-  function uid() {
-    const auth = useAuthStore()
-    if (!auth.user?.id) {
-      console.error('[SLAC] uid() chamado sem usuário autenticado. auth.user =', auth.user)
-      throw new Error('Usuário não autenticado')
-    }
     return auth.user.id
   }
 

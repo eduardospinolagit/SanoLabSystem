@@ -294,7 +294,6 @@ import { useLeadsStore, ETAPAS } from '@/stores/leads'
 import { useAuthStore } from '@/stores/auth'
 import { useFinStore } from '@/stores/fin'
 import { useSaving } from '@/composables/useSaving'
-import { useRealtime } from '@/composables/useRealtime'
 
 const leads = useLeadsStore()
 const auth  = useAuthStore()
@@ -530,10 +529,7 @@ async function pedirNotificacao() {
   else toast('Permissão negada','err')
 }
 
-onMounted(()=>{
-  if (!auth.user) return
-  useRealtime(auth.user.id,{onLeads:()=>leads.load()})
-})
+// Realtime gerenciado globalmente pelo useAppInit
 </script>
 
 <style scoped>

@@ -1056,6 +1056,11 @@ onUnmounted(() => {
   border: 3px solid var(--accent);
   animation: sz-qr-pulse 2s ease infinite;
 }
+:global([data-theme="light"]) .sz-qr-img {
+  /* Inverte QR gerado com fundo escuro para fundo branco no tema claro */
+  filter: invert(1) saturate(0) contrast(1.5);
+  border-color: var(--accent);
+}
 .sz-connecting {
   display: flex;
   flex-direction: column;

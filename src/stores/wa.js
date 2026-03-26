@@ -3,30 +3,103 @@ import { ref } from 'vue'
 import { sb } from '@/lib/supabase'
 import { uid } from '@/utils/uid'
 
+const BASE_URL = 'http://localhost:3001'
+
 export const useWaStore = defineStore('wa', () => {
   const templates  = ref([])
   const config     = ref({ instance_id: '' })
   const scriptBase = ref('')
   const chats      = ref([]) // [{lead, lastMsg, lastAt, lastDirecao}]
 
+  // ── Conexão local ──
+  const connected      = ref(false)
+  const hasQr          = ref(false)
+  const qrImage        = ref(null)
+  const serverOnline   = ref(false) // true quando o servidor local responde (mesmo que WA não conectado)
+  let _lastTokenSent = 0
+
+  async function sendToken() {
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session?.access_token) return
+      await fetch(BASE_URL + '/set-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: session.access_token }),
+      })
+      _lastTokenSent = Date.now()
+    } catch {}
+  }
+
+  async function checkStatus() {
+    try {
+      const r = await fetch(BASE_URL + '/status')
+      const d = await r.json()
+      serverOnline.value = true
+      const wasConnected = connected.value
+      connected.value = d.connected
+      hasQr.value     = d.hasQr
+      qrImage.value   = d.qrImage
+      // Envia JWT ao tray quando conecta ou a cada 45min (antes do token expirar)
+      if (d.connected && (!wasConnected || Date.now() - _lastTokenSent > 45 * 60 * 1000)) {
+        await sendToken()
+      }
+    } catch {
+      serverOnline.value = false
+      connected.value    = false
+      hasQr.value        = false
+      qrImage.value      = null
+    }
+  }
+
+  async function disconnect() {
+    try { await fetch(BASE_URL + '/disconnect', { method: 'POST' }) } catch {}
+    connected.value = false
+    hasQr.value     = false
+    qrImage.value   = null
+  }
+
   async function loadChats() {
-    const { data: convs } = await sb
+    const { data: convs, error: convErr } = await sb
       .from('conversas')
-      .select('lead_id, mensagem, data, direcao')
+      .select('lead_id, mensagem, data, direcao, telefone, contato_nome')
       .eq('canal', 'whatsapp')
       .eq('user_id', uid())
       .order('data', { ascending: false })
+    console.log('[loadChats] convs:', convs?.length, '| error:', convErr?.message)
     if (!convs?.length) { chats.value = []; return }
-    const map = new Map()
+
+    const leadMap  = new Map() // lead_id  → última conversa
+    const phoneMap = new Map() // telefone → última conversa (sem lead)
     for (const c of convs) {
-      if (!map.has(c.lead_id)) map.set(c.lead_id, c)
+      if (c.lead_id) { if (!leadMap.has(c.lead_id))   leadMap.set(c.lead_id, c) }
+      else if (c.telefone) { if (!phoneMap.has(c.telefone)) phoneMap.set(c.telefone, c) }
     }
-    const { data: leadsData } = await sb
-      .from('leads').select('id, nome, telefone, etapa')
-      .in('id', [...map.keys()]).eq('user_id', uid())
-    chats.value = (leadsData || [])
-      .map(l => ({ lead: l, lastMsg: map.get(l.id)?.mensagem || '', lastAt: map.get(l.id)?.data || '', lastDirecao: map.get(l.id)?.direcao || '' }))
-      .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt))
+    console.log('[loadChats] leadMap:', leadMap.size, '| phoneMap:', phoneMap.size)
+
+    const result = []
+
+    // Contatos com lead no CRM
+    if (leadMap.size) {
+      const { data: leadsData, error: leadsErr } = await sb
+        .from('leads').select('id, nome, telefone, etapa')
+        .in('id', [...leadMap.keys()]).eq('user_id', uid())
+      console.log('[loadChats] leadsData:', leadsData?.length, '| error:', leadsErr?.message)
+      for (const l of (leadsData || [])) {
+        const c = leadMap.get(l.id)
+        result.push({ lead: l, lastMsg: c?.mensagem || '', lastAt: c?.data || '', lastDirecao: c?.direcao || '' })
+      }
+    }
+
+    // Contatos sem lead (inbox direto do WhatsApp)
+    for (const [phone, c] of phoneMap) {
+      result.push({
+        lead: { id: null, nome: c.contato_nome || phone, telefone: phone, etapa: null },
+        lastMsg: c.mensagem || '', lastAt: c.data || '', lastDirecao: c.direcao || '',
+      })
+    }
+
+    chats.value = result.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt))
   }
 
   async function loadTemplates() {
@@ -85,36 +158,29 @@ export const useWaStore = defineStore('wa', () => {
   }
 
   async function enviarArquivo(leadId, userId, telefone, tipo, arquivo, arquivoNome, caption) {
-    const { data, error } = await sb.functions.invoke('wa-send', {
-      body: { lead_id: leadId, user_id: userId, telefone, tipo, arquivo, arquivo_nome: arquivoNome, mensagem: caption || '' }
+    const endpoint = tipo === 'image' ? '/send-image' : tipo === 'audio' ? '/send-audio' : '/send-document'
+    const body = { telefone, lead_id: leadId, user_id: userId }
+    if (tipo === 'image')    { body.imagem = arquivo; body.caption = caption || '' }
+    else if (tipo === 'audio')    { body.audio = arquivo }
+    else                     { body.documento = arquivo; body.nome = arquivoNome; body.mimetype = '' }
+    const r = await fetch(BASE_URL + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     })
-    if (error) {
-      let detail = error.message
-      try {
-        const text = await error.context?.text?.()
-        const parsed = text ? JSON.parse(text) : null
-        detail = parsed?.detail || parsed?.error || text || error.message
-      } catch {}
-      throw new Error(detail)
-    }
-    if (!data?.ok) throw new Error(data?.detail || data?.error || 'Falha ao enviar')
+    const data = await r.json()
+    if (!r.ok) throw new Error(data.error || 'Falha ao enviar arquivo')
     return data
   }
 
   async function enviarMensagem(leadId, userId, telefone, mensagem) {
-    const { data, error } = await sb.functions.invoke('wa-send', {
-      body: { lead_id: leadId, user_id: userId, telefone, mensagem }
+    const r = await fetch(BASE_URL + '/send-text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone, mensagem, lead_id: leadId, user_id: userId }),
     })
-    if (error) {
-      let detail = error.message
-      try {
-        const text = await error.context?.text?.()
-        const parsed = text ? JSON.parse(text) : null
-        detail = parsed?.detail || parsed?.error || text || error.message
-      } catch {}
-      throw new Error(detail)
-    }
-    if (!data?.ok) throw new Error(data?.detail || data?.error || 'Falha ao enviar')
+    const data = await r.json()
+    if (!r.ok) throw new Error(data.error || 'Falha ao enviar')
     return data
   }
 
@@ -129,6 +195,8 @@ export const useWaStore = defineStore('wa', () => {
 
   return {
     templates, config, scriptBase, chats,
+    connected, hasQr, qrImage, serverOnline,
+    checkStatus, disconnect, sendToken,
     loadTemplates, saveTemplate, deleteTemplate,
     loadConfig, saveConfig, loadChats,
     enviarMensagem, enviarArquivo, gerarScript,

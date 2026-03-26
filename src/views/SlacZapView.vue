@@ -8,6 +8,11 @@
         <p class="sz-qr-sub">Abra o WhatsApp no celular → <strong>Dispositivos conectados</strong> → Escanear QR Code</p>
         <img :src="wa.qrImage" class="sz-qr-img" alt="QR Code WhatsApp" />
       </div>
+      <div v-else-if="wa.serverOnline" class="sz-connecting">
+        <div class="sz-spinner"></div>
+        <p class="sz-connecting-title">Iniciando WhatsApp...</p>
+        <p class="sz-connecting-hint">Servidor conectado — aguardando sessão do WhatsApp</p>
+      </div>
       <div v-else class="sz-connecting">
         <div class="sz-spinner"></div>
         <p class="sz-connecting-title">Aguardando servidor...</p>

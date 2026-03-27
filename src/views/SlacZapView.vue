@@ -1056,24 +1056,24 @@ onUnmounted(() => {
   border: 3px solid var(--accent);
   animation: sz-qr-pulse 2s ease infinite;
 }
-:global([data-theme="light"]) .sz-qr-img {
-  /* Inverte QR gerado com fundo escuro para fundo branco no tema claro */
+/* Inverte QR gerado com fundo escuro para fundo branco no tema claro */
+[data-theme="light"] .sz-qr-img {
   filter: invert(1) saturate(0) contrast(1.5);
   border-color: var(--accent);
 }
 /* Light mode — overlay de conexão visível sobre fundo claro */
-:global([data-theme="light"]) .sz-connect-overlay {
+[data-theme="light"] .sz-connect-overlay {
   background: var(--bg-surface);
   border-top: 1px solid var(--border-default);
 }
-:global([data-theme="light"]) .sz-spinner {
+[data-theme="light"] .sz-spinner {
   border-color: var(--border-default);
   border-top-color: var(--accent);
 }
-:global([data-theme="light"]) .sz-sidebar {
+[data-theme="light"] .sz-sidebar {
   border-right-color: var(--border-default);
 }
-:global([data-theme="light"]) .sz-search {
+[data-theme="light"] .sz-search {
   background: var(--bg-overlay);
   border-color: var(--border-default);
 }
@@ -1473,21 +1473,21 @@ onUnmounted(() => {
   position: relative;
 }
 /* Light mode */
-:global([data-theme="light"]) .sz-modal-overlay {
+[data-theme="light"] .sz-modal-overlay {
   background: rgba(0,0,0,0.15);
 }
-:global([data-theme="light"]) .sz-modal {
+[data-theme="light"] .sz-modal {
   background: rgba(255,255,255,0.92);
   border: 1px solid rgba(0,0,0,0.08);
   box-shadow: 0 24px 64px rgba(0,0,0,0.12);
 }
-:global([data-theme="light"]) .sz-modal-nav {
+[data-theme="light"] .sz-modal-nav {
   border-right-color: rgba(0,0,0,0.07);
 }
-:global([data-theme="light"]) .sz-modal-nav-item:hover {
+[data-theme="light"] .sz-modal-nav-item:hover {
   background: rgba(0,0,0,0.04);
 }
-:global([data-theme="light"]) .sz-modal-history-row {
+[data-theme="light"] .sz-modal-history-row {
   border-bottom-color: rgba(0,0,0,0.06);
 }
 .sz-modal-close {

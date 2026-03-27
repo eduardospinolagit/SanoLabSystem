@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Anti-FOUC: aplica tema antes do Vue montar para evitar flash de tema errado -->
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('slac-theme')||'dark')}catch(e){}</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>SLAC</title>

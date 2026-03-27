@@ -1461,9 +1461,9 @@ onUnmounted(() => {
   background: rgba(0,0,0,0.15);
 }
 :global([data-theme="light"]) .sz-modal {
-  background: rgba(255,255,255,0.78);
+  background: rgba(255,255,255,0.92);
   border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.12);
 }
 :global([data-theme="light"]) .sz-modal-nav {
   border-right-color: rgba(0,0,0,0.07);

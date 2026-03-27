@@ -39,6 +39,18 @@ export const useLeadsStore = defineStore('leads', () => {
     return conversas.value
   }
 
+  async function loadConversasByPhone(telefone) {
+    const phone = String(telefone).replace(/\D/g, '').replace(/^55/, '').slice(-10)
+    const { data, error } = await sb
+      .from('conversas').select('*')
+      .eq('user_id', uid())
+      .is('lead_id', null)
+      .ilike('telefone', `%${phone}%`)
+      .order('data', { ascending: true })
+    if (error) return []
+    return data || []
+  }
+
   // ── Internal (não empurra undo stack) ──
   async function _upsert(payload) {
     const { error } = await sb.from('leads').upsert(
@@ -124,5 +136,5 @@ export const useLeadsStore = defineStore('leads', () => {
     }).sort((a, b) => new Date(a.proximo_followup) - new Date(b.proximo_followup))
   })
 
-  return { leads, conversas, undoStack, drawerLeadId, load, loadConversas, upsert, remove, undo, addConversa, getById, stats, followUpsAlerta }
+  return { leads, conversas, undoStack, drawerLeadId, load, loadConversas, loadConversasByPhone, upsert, remove, undo, addConversa, getById, stats, followUpsAlerta }
 })

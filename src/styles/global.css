@@ -1,6 +1,6 @@
 /* ============================================================
    SLAC — Global Styles
-   Sano Lab Advanced CRM
+   Desenvolvido por Sano Lab
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&display=swap');
@@ -575,9 +575,9 @@ tbody tr:hover td {
 }
 
 [data-theme="light"] .modal {
-  background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
 }
 
 .modal-body {
@@ -640,8 +640,8 @@ tbody tr:hover td {
 }
 
 [data-theme="light"] .drawer {
-  background: rgba(255, 255, 255, 0.42);
-  border-left: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.88);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.1);
 }
 

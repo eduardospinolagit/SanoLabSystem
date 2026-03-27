@@ -1181,7 +1181,7 @@ async function pedirNotificacao() {
 
 /* Card modal */
 .card-modal{background:rgba(18,18,18,0.38);backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);border:1px solid rgba(255,255,255,0.08);box-shadow:0 28px 72px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.05) inset;border-radius:var(--radius-xl, 16px);width:100%;max-width:480px;overflow:hidden;will-change:opacity;}
-[data-theme="light"] .card-modal{background:rgba(255,255,255,0.42);border:1px solid rgba(255,255,255,0.75);box-shadow:0 20px 60px rgba(0,0,0,.1),0 1px 0 rgba(255,255,255,.9) inset;}
+[data-theme="light"] .card-modal{background:rgba(255,255,255,0.88);border:1px solid rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,.12);}
 .card-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1.25rem 1.25rem .875rem;}
 .card-modal-name{font-size:1.125rem;font-weight:700;color:var(--text-primary);margin:0;}
 .card-modal-neg{font-size:.8125rem;color:var(--text-tertiary);margin:.2rem 0 0;}
@@ -1215,7 +1215,7 @@ async function pedirNotificacao() {
 .drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:800;}
 [data-theme="light"] .drawer-bg{background:rgba(200,200,210,0.3);}
 .drawer{position:fixed;top:0;right:0;height:100vh;width:420px;max-width:95vw;background:rgba(18,18,18,0.38);backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);border-left:1px solid rgba(255,255,255,0.08);box-shadow:-8px 0 40px rgba(0,0,0,.5);z-index:801;display:flex;flex-direction:column;overflow:hidden;}
-[data-theme="light"] .drawer{background:rgba(255,255,255,0.42);border-left:1px solid rgba(255,255,255,0.75);box-shadow:-8px 0 40px rgba(0,0,0,.1);}
+[data-theme="light"] .drawer{background:rgba(255,255,255,0.88);border-left:1px solid rgba(0,0,0,0.08);box-shadow:-8px 0 40px rgba(0,0,0,.1);}
 /* Drawer tabs */
 .drawer-tabs{display:flex;gap:2px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);padding:0 1rem;flex-shrink:0;}
 .drawer-tab{display:flex;align-items:center;gap:5px;padding:.55rem .7rem;font-size:.78rem;font-weight:600;color:var(--text-tertiary);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;}

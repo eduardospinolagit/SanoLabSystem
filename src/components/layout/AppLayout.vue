@@ -751,9 +751,9 @@ function go(path) { router.push(path) }
   box-shadow: 0 28px 72px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
 }
 [data-theme="light"] .wb-card {
-  background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
 }
 
 .wb-close {
@@ -835,9 +835,9 @@ function go(path) { router.push(path) }
   overflow: hidden;
 }
 [data-theme="light"] .upd-card {
-  background: rgba(255,255,255,.5);
-  border: 1px solid rgba(255,255,255,.8);
-  box-shadow: 0 20px 60px rgba(0,0,0,.12), 0 1px 0 rgba(255,255,255,.9) inset;
+  background: rgba(255,255,255,.85);
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,.12);
 }
 .upd-header {
   display: flex;
@@ -868,6 +868,7 @@ function go(path) { router.push(path) }
 }
 .upd-list::-webkit-scrollbar { width: 3px; }
 .upd-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+[data-theme="light"] .upd-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); }
 .upd-version { }
 .upd-ver-header {
   display: flex;
@@ -884,6 +885,7 @@ function go(path) { router.push(path) }
   color: var(--text-secondary);
   letter-spacing: .04em;
 }
+[data-theme="light"] .upd-badge { background: rgba(0,0,0,.06); }
 .upd-badge--new {
   background: rgba(34,197,94,.18);
   color: var(--accent);

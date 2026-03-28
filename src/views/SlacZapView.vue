@@ -3206,6 +3206,25 @@ onMounted(async () => {
     }
   }
 
+  // Broadcast de novas mensagens — canal gerenciado pelo useAppInit (global)
+  // SlacZapView só assiste wa.lastWaMsg para atualizar a UI do chat
+  watch(() => wa.lastWaMsg, async (nova) => {
+    if (!nova || nova.canal !== 'whatsapp') return
+    const active = activeLead.value
+    const isActive = active && (
+      (active.id && active.id === nova.lead_id) ||
+      (!active.id && nova.telefone && active.telefone &&
+        nova.telefone.slice(-8) === active.telefone.replace(/\D/g,'').slice(-8))
+    )
+    if (isActive) {
+      const exists = waMsgs.value.some(m => m.id === nova.id || (m.id?.startsWith('opt_') && m.mensagem === nova.mensagem))
+      if (!exists) { waMsgs.value.push(nova); scrollBottom() }
+    } else if (nova.direcao === 'recebido') {
+      setTimeout(fetchUnreadCounts, 500)
+      playNotifSound()
+    }
+  })
+
   realtimeChannel = sb.channel('slaczap-' + auth.user.id)
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'configuracoes', filter: 'user_id=eq.' + auth.user.id },
       async (payload) => {
@@ -3216,31 +3235,8 @@ onMounted(async () => {
         const upd = payload.new
         if (upd.user_id !== auth.user.id) return
         if (!upd?.status || !upd?.id) return
-        // Atualiza status da mensagem na conversa aberta
         const idx = waMsgs.value.findIndex(m => m.id === upd.id)
         if (idx !== -1) waMsgs.value[idx] = { ...waMsgs.value[idx], status: upd.status }
-      })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversas' },
-      async (payload) => {
-        const nova = payload.new
-        if (nova.user_id !== auth.user.id) return
-        if (nova.canal !== 'whatsapp') return
-        await wa.loadChats()
-        const active = activeLead.value
-        const isActive = active && (
-          (active.id && active.id === nova.lead_id) ||
-          (!active.id && nova.telefone && active.telefone &&
-            nova.telefone.slice(-8) === active.telefone.replace(/\D/g,'').slice(-8))
-        )
-        if (isActive) {
-          const exists = waMsgs.value.some(m => m.id === nova.id || (m.id?.startsWith('opt_') && m.mensagem === nova.mensagem))
-          if (!exists) { waMsgs.value.push(nova); scrollBottom() }
-        } else if (nova.direcao === 'recebido') {
-          // incrementUnread gerenciado pelo useAppInit globalmente (evita contagem dupla)
-          setTimeout(fetchUnreadCounts, 500)
-          playNotifSound()
-        }
-        // SDR é processado globalmente pelo useAppInit (_sdrProcess) — sem chamada duplicada aqui
       })
     .subscribe()
 })

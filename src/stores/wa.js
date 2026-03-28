@@ -257,6 +257,9 @@ export const useWaStore = defineStore('wa', () => {
     return data
   }
 
+  // Última mensagem recebida via Broadcast do tray — SlacZapView faz watch aqui
+  const lastWaMsg = ref(null)
+
   // ── SDR por IA ──
   const sdrConfig = ref({
     enabled: false,
@@ -416,7 +419,7 @@ export const useWaStore = defineStore('wa', () => {
   }
 
   return {
-    templates, config, scriptBase, chats,
+    templates, config, scriptBase, chats, lastWaMsg,
     unreadCounts, totalUnread, notifChats,
     storeIncrementUnread, storeClearUnread, storeClearAllUnread, storeSetUnread, storeSetAllUnread,
     connected, hasQr, qrImage, qrImageLight, serverOnline,

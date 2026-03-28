@@ -198,6 +198,23 @@ export async function useAppInit() {
       console.log('[Realtime] status do canal:', status, err || '')
     })
 
+  // Canal Broadcast Realtime — tray envia evento após cada INSERT em conversas
+  // Um único canal global; SlacZapView faz watch em wa.lastWaMsg (evita conflito de canais)
+  sb.channel(`wa-${auth.user.id}`)
+    .on('broadcast', { event: 'nova_mensagem' }, async ({ payload: nova }) => {
+      console.log('[Broadcast] nova mensagem:', { direcao: nova.direcao, lead_id: nova.lead_id })
+      wa.lastWaMsg = nova   // SlacZapView reage via watch
+      if (nova.lead_id === leads.drawerLeadId) {
+        leads.conversas.push(nova)
+      }
+      const key = nova.lead_id || nova.telefone || ''
+      wa.storeIncrementUnread(key)
+      try { await wa.loadChats() } catch {}
+      _sdrLastCheck = new Date().toISOString()
+      _sdrProcess(nova, wa, auth, leads).catch(() => {})
+    })
+    .subscribe()
+
   // BroadcastChannel: recebe leads da aba de Prospecção
   try {
     const bc = new BroadcastChannel('slac_crm')

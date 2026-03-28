@@ -216,7 +216,7 @@ const localConfig = reactive({
 })
 
 onMounted(async () => {
-  await wa.loadSdrConfig()
+  await wa.loadSdrConfig({ includeChats: false })
   Object.assign(localConfig, {
     etapas:     [...(wa.sdrConfig.etapas || ['contato', 'interesse'])],
     horaInicio: wa.sdrConfig.horaInicio || '08:00',

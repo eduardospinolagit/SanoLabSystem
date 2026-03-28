@@ -3302,7 +3302,7 @@ onMounted(async () => {
   document.addEventListener('click', onDocClick, true)
 
   // Carrega configs do SDR, Follow-up automático e script
-  await Promise.all([wa.loadSdrConfig(), wa.loadFuAutoConfig(), wa.loadConfig()])
+  await Promise.all([wa.loadSdrConfig({ includeChats: false }), wa.loadFuAutoConfig(), wa.loadConfig()])
 
   // Verifica status do servidor local e inicia polling
   await wa.checkStatus()

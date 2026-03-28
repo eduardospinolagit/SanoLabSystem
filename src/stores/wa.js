@@ -312,7 +312,8 @@ export const useWaStore = defineStore('wa', () => {
     if (sdrChats[key]?.active) {
       sdrChats[key] = { active: false, msgCount: sdrChats[key].msgCount || 0 }
     } else {
-      sdrChats[key] = { active: true, msgCount: sdrChats[key]?.msgCount || 0 }
+      // Reseta msgCount ao re-ativar — evita desativação imediata por limite antigo
+      sdrChats[key] = { active: true, msgCount: 0 }
     }
     const userId = uid()
     await sb.from('configuracoes').upsert({

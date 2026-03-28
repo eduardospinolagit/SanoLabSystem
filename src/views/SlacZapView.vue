@@ -1819,8 +1819,8 @@ async function analisarLeadIA() {
     const key = analysisKey(lead)
     analysisCache[key] = result
     await sb.from('configuracoes').upsert(
-      { user_id: auth.user.id, chave: key, valor: result },
-      { onConflict: 'user_id,chave' }
+      { id: auth.user.id + '_' + key, user_id: auth.user.id, chave: key, valor: result },
+      { onConflict: 'id' }
     )
   } catch (e) {
     toast('Erro ao analisar lead: ' + (e.message || ''), 'error')
@@ -2768,10 +2768,11 @@ async function saveLastSeenRemote() {
   _savingLastSeen = true
   try {
     await sb.from('configuracoes').upsert({
+      id: auth.user.id + '_wa_last_seen',
       user_id: auth.user.id,
       chave: 'wa_last_seen',
       valor: lastSeenAt.value
-    }, { onConflict: 'user_id,chave' })
+    }, { onConflict: 'id' })
   } catch { /* silent */ } finally {
     _savingLastSeen = false
   }

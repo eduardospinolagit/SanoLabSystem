@@ -358,6 +358,10 @@ export const useWaStore = defineStore('wa', () => {
   // fuAutoChats: { [chatKey]: { active: bool, horas: number, lastSentAt: string|null } }
   const fuAutoChats = reactive({})
 
+  // ── Opções SLAC Modal (global) ──
+  const opcoesSLACOpen = ref(false)
+  const slacOptsLead   = ref(null)
+
   function fuAutoKey(lead) {
     if (!lead) return null
     return lead.id ? `lead_${lead.id}` : `phone_${(lead.telefone||'').replace(/\D/g,'')}`
@@ -441,5 +445,7 @@ export const useWaStore = defineStore('wa', () => {
     // Follow-up automático
     fuAutoChats, fuAutoKey, isFuAutoActive,
     loadFuAutoConfig, toggleFuAutoChat, setFuAutoHoras, markFuAutoSent,
+    // Opções SLAC Modal
+    opcoesSLACOpen, slacOptsLead,
   }
 })

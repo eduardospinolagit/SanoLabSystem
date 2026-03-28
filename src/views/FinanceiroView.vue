@@ -43,10 +43,10 @@
         <span class="kpi-value kpi-value--danger">{{ fmt(f.sai) }}</span>
         <span class="kpi-sub">{{ listaFiltrada.filter(t=>t.tipo==='saida').length }} transações</span>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card kpi-card--lucro" :class="f.lucro < 0 ? 'kpi-card--lucro-neg' : ''">
         <span class="kpi-label">Lucro</span>
-        <span class="kpi-value" :class="f.lucro>=0?'kpi-value--accent':'kpi-value--danger'">{{ fmt(f.lucro) }}</span>
-        <span class="kpi-sub">{{ f.lucro>=0?'positivo':'negativo' }}</span>
+        <span class="kpi-value kpi-value--white">{{ fmt(f.lucro) }}</span>
+        <span class="kpi-sub">{{ f.lucro >= 0 ? 'positivo' : 'negativo' }}</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">Ticket médio</span>
@@ -467,4 +467,11 @@ watch(theme, renderCharts)
 @media (max-width:900px)  { .charts-row { grid-template-columns:1fr; } }
 @media (max-width:1100px) { .kpi-grid--5 { grid-template-columns:repeat(3,1fr); } }
 @media (max-width:768px)  { .page-layout { padding:1rem 1rem 5rem; } .drawer { width:100%; } }
+
+.kpi-card--lucro { background: var(--accent); border-color: var(--accent); }
+.kpi-card--lucro-neg { background: var(--status-danger); border-color: var(--status-danger); }
+.kpi-card--lucro .kpi-label, .kpi-card--lucro .kpi-sub { color: rgba(255,255,255,.7); }
+.kpi-value--white { color: #fff !important; }
+[data-theme="light"] .kpi-card--lucro .kpi-label, [data-theme="light"] .kpi-card--lucro .kpi-sub { color: rgba(0,0,0,.55); }
+[data-theme="light"] .kpi-value--white { color: #fff !important; }
 </style>

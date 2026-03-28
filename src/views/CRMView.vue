@@ -97,16 +97,23 @@
           <div v-for="l in byEtapaFiltrado(e.id)" :key="l.id"
             class="kb-card" draggable="true"
             @dragstart="onDragStart(l)" @dragend="dragOver = null"
-            @click="openCardModal(l)">
+            @click="openLead(l.id)">
             <div class="kb-drag-handle">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
             </div>
             <div class="kb-name">{{ l.nome }}</div>
+            <div v-if="diasNaEtapa(l)" class="kb-etapa-tempo">{{ diasNaEtapa(l) }}</div>
             <div v-if="l.negocio" class="kb-negocio">{{ l.negocio }}</div>
             <div v-if="l.site_atual" class="kb-servico">{{ l.site_atual }}</div>
             <div v-if="l.notas" class="kb-notas">{{ l.notas.slice(0,80) }}{{ l.notas.length > 80 ? '...' : '' }}</div>
             <div class="kb-footer">
               <span class="kb-pri" :class="`pri-${l.prioridade}`">{{ l.prioridade }}</span>
+              <span v-if="l.ultima_direcao" class="kb-interacao" :class="l.ultima_direcao === 'recebido' ? 'kb-interacao--in' : 'kb-interacao--out'"
+                :title="l.ultima_direcao === 'recebido' ? 'Lead respondeu — você deve responder' : 'Você enviou — aguardando lead'">
+                <svg v-if="l.ultima_direcao === 'recebido'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                <svg v-else width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                {{ l.ultima_direcao === 'recebido' ? 'Lead' : 'Você' }}
+              </span>
             </div>
             <div v-if="work.leadsComWork.has(l.id)" class="kb-work-bar">
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
@@ -260,82 +267,6 @@
     </div>
   </div>
 
-  <!-- CARD MODAL (expandido do kanban) -->
-  <Transition name="modal-fade">
-    <div v-if="cardModal" class="modal-backdrop" @click.self="cardModal = null">
-      <div class="card-modal">
-        <div class="card-modal-header">
-          <div>
-            <h3 class="card-modal-name">{{ cardModal.nome }}</h3>
-            <p class="card-modal-neg">{{ cardModal.negocio || cardModal.categoria || '—' }}</p>
-          </div>
-          <div class="card-modal-actions">
-            <button class="btn btn-ghost btn-icon" @click="cardModal = null">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="card-modal-body">
-          <div class="card-modal-grid">
-            <div class="cm-item"><span class="cm-label">Telefone</span>
-              <button class="cm-val wa-link" @click="router.push('/slaczap?lead='+cardModal.id)">{{ cardModal.telefone }}</button>
-            </div>
-            <div class="cm-item"><span class="cm-label">Etapa</span>
-              <span class="cm-val"><span class="etapa-tag" :style="{ background: etapaColor(cardModal.etapa)+'18', color: etapaColor(cardModal.etapa) }">{{ etapaLabel(cardModal.etapa) }}</span></span>
-            </div>
-            <div class="cm-item"><span class="cm-label">Prioridade</span>
-              <span class="cm-val kb-pri" :class="`pri-${cardModal.prioridade}`">{{ cardModal.prioridade }}</span>
-            </div>
-            <div v-if="cardModal.site_atual" class="cm-item"><span class="cm-label">Serviço</span><span class="cm-val">{{ cardModal.site_atual }}</span></div>
-            <div v-if="cardModal.cidade" class="cm-item"><span class="cm-label">Cidade</span><span class="cm-val">{{ cardModal.cidade }}</span></div>
-            <div v-if="cardModal.instagram" class="cm-item"><span class="cm-label">Instagram</span><span class="cm-val">{{ cardModal.instagram }}</span></div>
-            <div v-if="cardModal.valor_estimado" class="cm-item"><span class="cm-label">Valor estimado</span><span class="cm-val" style="color:var(--accent);font-weight:700">{{ fmt(cardModal.valor_estimado) }}</span></div>
-            <div v-if="cardModal.proximo_followup" class="cm-item"><span class="cm-label">Follow-up</span><span class="cm-val" style="color:var(--status-warning)">{{ fmtDataHora(cardModal.proximo_followup) }}</span></div>
-          </div>
-          <div class="cm-notas">
-            <span class="cm-label">Notas</span>
-            <textarea
-              v-model="cardNotasEdit"
-              class="form-textarea cm-notas-textarea"
-              placeholder="Adicionar nota..."
-              rows="3"
-              @blur="salvarNotas"
-            ></textarea>
-          </div>
-        </div>
-        <div class="card-modal-footer">
-          <button class="btn btn-secondary btn-sm" @click="router.push('/slaczap?lead='+cardModal.id)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            SlacZap
-          </button>
-          <!-- Follow-up picker -->
-          <div class="fu-picker-wrap">
-            <button class="btn btn-warning btn-sm fu-picker-toggle" @click.stop="fuPickerOpen = !fuPickerOpen">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Follow-up
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: fuPickerOpen ? 'rotate(180deg)' : '', transition: 'transform 150ms' }"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <Transition name="fu-opts">
-              <div v-if="fuPickerOpen" class="fu-opts">
-                <button v-for="opt in fuOpts" :key="opt.h" class="fu-opt" @click.stop="agendarFollowUp(cardModal, opt.h); cardModal = null; fuPickerOpen = false">
-                  {{ opt.label }}
-                </button>
-              </div>
-            </Transition>
-          </div>
-          <!-- Relead -->
-          <button class="btn btn-purple btn-sm" @click="openReleadModal(cardModal); cardModal = null" title="Marcar como Relead">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Relead
-          </button>
-          <!-- Editar -->
-          <button class="btn btn-ghost btn-icon btn-sm" @click="openLead(cardModal.id); cardModal = null" title="Editar lead">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </Transition>
 
   <!-- MODAL RELEAD: escolher data -->
   <Transition name="modal-fade">
@@ -396,11 +327,16 @@
     <!-- Abas do drawer -->
     <div class="drawer-tabs">
       <button class="drawer-tab" :class="{ active: drawerTab === 'dados' }" @click="drawerTab = 'dados'">Dados</button>
-      <button class="drawer-tab" :class="{ active: drawerTab === 'whatsapp' }" @click="drawerTab = 'whatsapp'">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        WhatsApp
+      <button class="drawer-tab" :class="{ active: drawerTab === 'followup' }" @click="drawerTab = 'followup'">
+        Follow-up
+        <span v-if="currentLeadId && drawerLead && wa.isFuAutoActive(drawerLead)" class="drawer-tab-dot"></span>
       </button>
-      <button class="drawer-tab" :class="{ active: drawerTab === 'historico' }" @click="drawerTab = 'historico'">Histórico</button>
+      <button class="drawer-tab" :class="{ active: drawerTab === 'financeiro' }" @click="drawerTab = 'financeiro'">Financeiro</button>
+      <button class="drawer-tab" :class="{ active: drawerTab === 'ia' }" @click="drawerTab = 'ia'">
+        IA
+        <span v-if="currentLeadId && drawerLead && (wa.isSdrActive(drawerLead) || wa.isFuAutoActive(drawerLead))" class="drawer-tab-dot"></span>
+      </button>
+      <button class="drawer-tab" :class="{ active: drawerTab === 'historico' }" @click="drawerTab = 'historico'">Timeline</button>
     </div>
 
     <div class="drawer-body">
@@ -446,38 +382,10 @@
             <option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Valor estimado (R$)</label><input v-model.number="form.valor_estimado" class="form-input" type="number" placeholder="797" min="0" /></div>
-
-        <!-- Follow-up: data + hora -->
-        <div class="form-group">
-          <label class="form-label">
-            Próximo follow-up
-            <span v-if="form.proximo_followup" class="fu-badge">✓ agendado</span>
-          </label>
-          <div class="fu-datetime-input">
-            <input v-model="fuDate" class="form-input" type="date" @change="onFuDateChange" style="flex:1.4" />
-            <input v-model="fuTime" class="form-input" type="time" @change="onFuTimeChange" style="flex:1" />
-            <button v-if="form.proximo_followup" class="btn btn-ghost btn-icon btn-sm" @click="clearFollowUp" title="Remover follow-up">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <p v-if="form.proximo_followup" class="fu-hint">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            Notificação agendada para {{ fmtDataHora(form.proximo_followup) }}
-          </p>
-        </div>
       </div>
       <div class="drawer-section">
         <p class="drawer-section-title">Notas</p>
         <div class="form-group"><textarea v-model="form.notas" class="form-textarea" placeholder="Observações, objeções, contexto..."></textarea></div>
-      </div>
-      <div class="drawer-section">
-        <p class="drawer-section-title">Script rápido</p>
-        <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:.82rem" @click="gerarScript">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          Gerar script para esta etapa
-        </button>
-        <div v-if="script" class="script-box">{{ script }}</div>
       </div>
       <div v-if="histEtapas.length" class="drawer-section">
         <p class="drawer-section-title">Histórico de etapas</p>
@@ -490,51 +398,224 @@
       </div>
       </div><!-- /aba dados -->
 
-      <!-- ── ABA WHATSAPP ── -->
-      <div v-show="drawerTab === 'whatsapp'" class="wa-tab">
-        <div class="wa-msgs">
-          <div v-if="!waMensagens.length" class="wa-empty">Nenhuma mensagem ainda. Envie a primeira!</div>
-          <div v-for="m in waMensagens" :key="m.id" class="wa-msg" :class="m.direcao === 'enviado' ? 'wa-out' : 'wa-in'">
-            <div class="wa-bubble">{{ m.mensagem }}</div>
-            <div class="wa-time">{{ fmtDataHora(m.data) }}</div>
-          </div>
+      <!-- ── ABA FOLLOW-UP ── -->
+      <div v-show="drawerTab === 'followup'">
+      <div class="drawer-section">
+        <p class="drawer-section-title">Follow-up manual</p>
+        <div class="form-group">
+          <label class="form-label">Data e hora</label>
+          <input type="datetime-local" class="form-input" v-model="drawerFollowupDate" />
         </div>
-        <div class="wa-composer">
-          <div class="wa-toolbar">
-            <select v-model="waTemplateId" class="form-select wa-select" @change="waAplicarTemplate" :disabled="waGerandoScript">
-              <option value="">📋 Template...</option>
-              <option v-for="t in waTemplatesFiltrados" :key="t.id" :value="t.id">{{ t.nome }}</option>
-            </select>
-            <button class="btn btn-ghost btn-sm wa-ia-btn" @click="waGerarComIA" :disabled="waGerandoScript || waEnviando">
-              <span v-if="waGerandoScript">Gerando...</span>
-              <span v-else>✨ Gerar com IA</span>
-            </button>
-          </div>
-          <textarea v-model="waMensagem" class="form-textarea wa-textarea"
-            :placeholder="waGerandoScript ? 'Analisando perfil do negócio...' : 'Digite a mensagem...'"
-            :disabled="waGerandoScript" rows="4" />
-          <button class="btn btn-primary wa-send-btn" @click="waEnviar"
-            :disabled="!waMensagem.trim() || waEnviando || waGerandoScript">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            {{ waEnviando ? 'Enviando...' : 'Enviar no WhatsApp' }}
-          </button>
+        <div class="form-group">
+          <label class="form-label">Contexto</label>
+          <input type="text" class="form-input" v-model="drawerFollowupObs" placeholder="Ex.: ligar às 14h sobre proposta" />
+        </div>
+        <button class="btn btn-primary btn-sm" style="width:fit-content" @click="drawerSaveFollowup">Salvar follow-up</button>
+        <div v-if="drawerLead?.proximo_followup" class="fu-hint" style="margin-top:4px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Agendado: {{ fmtDataHora(drawerLead.proximo_followup) }}
         </div>
       </div>
+      <div class="drawer-section">
+        <p class="drawer-section-title">Follow-up automático</p>
+        <div class="sz-sdr-toggle-row">
+          <div>
+            <p class="sz-sdr-toggle-title">Ativar neste chat</p>
+            <p class="sz-sdr-toggle-sub text-sm text-muted">{{ drawerLead && wa.isFuAutoActive(drawerLead) ? 'Enviará follow-up se não houver resposta no prazo' : 'Manda follow-up automático se o lead não responder' }}</p>
+          </div>
+          <button class="sz-sdr-pill" :class="{ 'sz-sdr-pill--on': drawerLead && wa.isFuAutoActive(drawerLead) }" @click="drawerToggleFuAutoChat">
+            <span class="sz-sdr-pill-thumb"></span>
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Enviar se não responder em</label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <select class="form-select" v-model="drawerFuAutoHorasLocal" style="width:auto">
+              <option :value="1">1 hora</option><option :value="2">2 horas</option><option :value="3">3 horas</option>
+              <option :value="4">4 horas</option><option :value="6">6 horas</option><option :value="8">8 horas</option>
+              <option :value="12">12 horas</option><option :value="24">24 horas</option>
+            </select>
+            <span class="text-muted text-sm">após a última mensagem</span>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px;width:fit-content" @click="drawerSaveFuAutoHoras">Salvar</button>
+        </div>
+        <div v-if="drawerLead && wa.isFuAutoActive(drawerLead)" class="sz-sdr-active-info">
+          <div class="sz-sdr-active-row"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Follow-up automático habilitado</div>
+          <div v-if="drawerLead && wa.fuAutoChats[wa.fuAutoKey(drawerLead)]?.lastSentAt" class="sz-sdr-active-row">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Último: {{ fmtDataHora(wa.fuAutoChats[wa.fuAutoKey(drawerLead)]?.lastSentAt) }}
+          </div>
+        </div>
+      </div>
+      </div><!-- /aba followup -->
+
+      <!-- ── ABA FINANCEIRO ── -->
+      <div v-show="drawerTab === 'financeiro'">
+      <div class="drawer-section">
+        <p class="drawer-section-title">Serviços</p>
+        <!-- Chips dos serviços adicionados -->
+        <div v-if="drawerServicosLead.length" class="serv-chips">
+          <span v-for="s in drawerServicosLead" :key="s" class="serv-chip">
+            {{ s }}
+            <button class="serv-chip-rm" @click="drawerRemoveServico(s)" title="Remover">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </span>
+        </div>
+        <!-- Input de busca/adição -->
+        <div class="serv-input-wrap" @focusout="e => { if (!e.currentTarget.contains(e.relatedTarget)) drawerServicosOpen = false }">
+          <div class="serv-input-row">
+            <input
+              class="form-input"
+              v-model="drawerServicosSearch"
+              placeholder="Buscar ou adicionar serviço..."
+              @focus="drawerServicosOpen = true"
+              @keydown.enter.prevent="drawerAddServico(drawerServicosSearch)"
+              @keydown.escape="drawerServicosOpen = false"
+            />
+            <button class="btn btn-primary btn-sm btn-icon" @click="drawerAddServico(drawerServicosSearch)" title="Adicionar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <div v-if="drawerServicosOpen && drawerServicosFiltered.length" class="serv-dropdown">
+            <button
+              v-for="s in drawerServicosFiltered"
+              :key="s"
+              class="serv-dropdown-item"
+              @mousedown.prevent="drawerAddServico(s)"
+            >{{ s }}</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:.75rem">
+          <label class="form-label">Valor estimado (R$)</label>
+          <input type="number" class="form-input" :value="drawerLead?.valor_estimado ?? form.valor_estimado ?? ''" @blur="e => { form.valor_estimado = e.target.value ? Number(e.target.value) : ''; saveField('valor_estimado', e.target.value ? Number(e.target.value) : null) }" placeholder="797" />
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <p class="drawer-section-title" style="margin:0">Parcelas</p>
+          <button class="btn btn-ghost btn-sm" @click="drawerAdicionarParcela">+ Adicionar</button>
+        </div>
+        <div v-if="!drawerParcelasLocal.length" style="font-size:13px;color:var(--text-tertiary);padding:.25rem 0">Nenhuma parcela cadastrada.</div>
+        <div v-for="(p, idx) in drawerParcelasLocal.slice().sort((a,b) => a.numero - b.numero)" :key="p.numero" class="sz-parcela-row">
+          <span class="sz-parcela-num">#{{ p.numero }}</span>
+          <input type="number" class="form-input sz-parcela-input" placeholder="Valor" :value="p.valor" @blur="e => { drawerParcelasLocal[idx].valor = e.target.value ? Number(e.target.value) : null; drawerSaveParcelas() }" />
+          <input type="date" class="form-input sz-parcela-input" :value="p.vencimento" @blur="e => { drawerParcelasLocal[idx].vencimento = e.target.value || null; drawerSaveParcelas() }" />
+          <label class="sz-parcela-pago"><input type="checkbox" :checked="p.pago" @change="drawerTogglePago(idx)" /><span>Pago</span></label>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <p class="drawer-section-title">Transações vinculadas</p>
+        <p v-if="!drawerTransacoesLead.length" style="font-size:13px;color:var(--text-tertiary)">Nenhuma transação vinculada a este contato.</p>
+        <div v-for="t in drawerTransacoesLead" :key="t.id" class="crmtx-row">
+          <div class="crmtx-top">
+            <span class="crmtx-desc">{{ t.desc }}</span>
+            <span class="crmtx-val" :class="isEntrada(t) ? 'crmtx-val--in' : 'crmtx-val--out'">
+              {{ isEntrada(t) ? '+' : '−' }} R$ {{ Number(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+            </span>
+          </div>
+          <div class="crmtx-bottom">
+            <span class="crmtx-date">{{ fmtTxDate(t.data) }}</span>
+            <span class="tx-st-badge" :class="isPago(t) ? 'tx-st--pago' : 'tx-st--pend'">{{ isPago(t) ? 'recebido' : 'pendente' }}</span>
+          </div>
+        </div>
+      </div>
+      </div><!-- /aba financeiro -->
+
+      <!-- ── ABA IA ── -->
+      <div v-show="drawerTab === 'ia'">
+      <div class="drawer-section">
+        <p class="drawer-section-title">SDR por IA</p>
+        <div v-if="!wa.sdrConfig.enabled" class="sz-sdr-section-warn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          SDR desativado globalmente. Ative em <router-link to="/sdr" class="sz-sdr-link">SDR IA</router-link>.
+        </div>
+        <div class="sz-sdr-toggle-row">
+          <div>
+            <p class="sz-sdr-toggle-title">Ativar SDR neste chat</p>
+            <p class="sz-sdr-toggle-sub text-sm text-muted">{{ drawerLead && wa.isSdrActive(drawerLead) ? 'SDR respondendo automaticamente · ' + (wa.sdrChats[wa.sdrChatKey(drawerLead)]?.msgCount || 0) + ' msgs' : 'O agente responderá mensagens automaticamente' }}</p>
+          </div>
+          <button class="sz-sdr-pill" :class="{ 'sz-sdr-pill--on': drawerLead && wa.isSdrActive(drawerLead) }" @click="drawerLead && wa.toggleSdrChat(drawerLead)" :disabled="!wa.sdrConfig.enabled">
+            <span class="sz-sdr-pill-thumb"></span>
+          </button>
+        </div>
+        <div v-if="drawerLead && wa.isSdrActive(drawerLead)" class="sz-sdr-active-info">
+          <div class="sz-sdr-active-row"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Respostas automáticas habilitadas</div>
+          <div class="sz-sdr-active-row"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Horário: {{ wa.sdrConfig.horaInicio }} – {{ wa.sdrConfig.horaFim }}</div>
+          <div class="sz-sdr-active-row"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>Limite: {{ wa.sdrConfig.limiteMsg }} msgs por chat</div>
+          <div v-if="!wa.sdrIsInHours()" class="sz-sdr-active-row sz-sdr-active-row--warn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ drawerSdrForaMotivo }}
+          </div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <p class="drawer-section-title">Análise de conversa</p>
+        <div v-if="drawerAnalisando" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 0">
+          <div class="sz-typing"><span></span><span></span><span></span></div>
+          <p style="font-size:13px;color:var(--text-secondary)">Analisando conversa...</p>
+        </div>
+        <div v-else-if="drawerErroAnalise">
+          <p style="font-size:13px;color:var(--status-danger);margin-bottom:12px">{{ drawerErroAnalise }}</p>
+          <button class="btn btn-primary btn-sm" @click="drawerAnalisarLead">Tentar novamente</button>
+        </div>
+        <div v-else-if="!drawerLead?.analise_ia">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5">A IA analisa as últimas mensagens e avalia o potencial deste lead.</p>
+          <button class="btn btn-primary" @click="drawerAnalisarLead">Analisar conversa</button>
+        </div>
+        <div v-else>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:12px;color:var(--text-secondary)">Score</span>
+              <span style="font-size:12px;font-weight:600" :style="{ color: drawerLead.analise_ia.score > 70 ? 'var(--accent)' : drawerLead.analise_ia.score >= 40 ? 'var(--status-warning)' : 'var(--status-danger)' }">{{ drawerLead.analise_ia.score }}/100</span>
+            </div>
+            <div style="height:6px;background:var(--bg-overlay);border-radius:3px;overflow:hidden">
+              <div style="height:100%;border-radius:3px;transition:width 0.3s" :style="{ width: drawerLead.analise_ia.score + '%', background: drawerLead.analise_ia.score > 70 ? 'var(--accent)' : drawerLead.analise_ia.score >= 40 ? 'var(--status-warning)' : 'var(--status-danger)' }"></div>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--text-primary);line-height:1.6;margin-bottom:16px">{{ drawerLead.analise_ia.resumo }}</p>
+          <div v-if="drawerLead.analise_ia.positivos?.length" style="margin-bottom:14px">
+            <p style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Pontos positivos</p>
+            <div v-for="p in drawerLead.analise_ia.positivos" :key="p" class="sz-analise-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span>{{ p }}</span></div>
+          </div>
+          <div v-if="drawerLead.analise_ia.atencao?.length" style="margin-bottom:16px">
+            <p style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Pontos de atenção</p>
+            <div v-for="a in drawerLead.analise_ia.atencao" :key="a" class="sz-analise-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--status-warning)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>{{ a }}</span></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border-subtle)">
+            <span style="font-size:11px;color:var(--text-tertiary)">
+              {{ drawerLead.analise_ia.geradoEm ? 'Gerado em ' + new Date(drawerLead.analise_ia.geradoEm).toLocaleString('pt-BR') : 'Data não registrada — re-analise para atualizar' }}
+            </span>
+            <button class="btn btn-ghost btn-sm" @click="drawerAnalisarLead">Re-analisar</button>
+          </div>
+        </div>
+      </div>
+      </div><!-- /aba ia -->
 
       <!-- ── ABA HISTÓRICO ── -->
       <div v-show="drawerTab === 'historico'">
       <div v-if="currentLeadId" class="drawer-section">
-        <p class="drawer-section-title">Conversas</p>
+        <p class="drawer-section-title">Linha do tempo</p>
         <div class="conv-list">
-          <div v-if="!leads.conversas.length" class="conv-empty">Nenhuma conversa registrada</div>
-          <div v-for="c in leads.conversas" :key="c.id" class="conv-item">
-            <div class="conv-meta">
-              <span class="conv-canal">{{ c.canal }}</span>
-              <span :class="c.direcao === 'recebido' ? 'dir-in' : 'dir-out'">{{ c.direcao === 'recebido' ? '← Recebido' : '→ Enviado' }}</span>
-              <span class="conv-time">{{ fmtDataHora(c.data) }}</span>
+          <div v-if="!drawerTimeline.length" class="conv-empty">Nenhum registro ainda</div>
+          <template v-for="c in drawerTimeline" :key="c.id">
+            <!-- Evento de sistema (etapa/prioridade) -->
+            <div v-if="c.canal === 'sistema'" class="tl-event">
+              <span class="tl-event-line"></span>
+              <span class="tl-event-dot"></span>
+              <span class="tl-event-text">{{ c.mensagem }}</span>
+              <span class="tl-event-time">{{ fmtDataHora(c.data) }}</span>
             </div>
-            <div class="conv-msg">{{ c.mensagem }}</div>
-          </div>
+            <!-- Mensagem normal -->
+            <div v-else class="conv-item">
+              <div class="conv-meta">
+                <span class="conv-canal">{{ c.canal }}</span>
+                <span :class="c.direcao === 'recebido' ? 'dir-in' : 'dir-out'">{{ c.direcao === 'recebido' ? '← Recebido' : '→ Enviado' }}</span>
+                <span class="conv-time">{{ fmtDataHora(c.data) }}</span>
+              </div>
+              <div class="conv-msg">{{ c.mensagem }}</div>
+            </div>
+          </template>
         </div>
         <div class="conv-composer">
           <div class="conv-selects">
@@ -585,6 +666,7 @@ import { useFinStore } from '@/stores/fin'
 import { useWaStore } from '@/stores/wa'
 import { useSaving } from '@/composables/useSaving'
 import { usePushNotifications } from '@/composables/usePushNotifications'
+import { sb } from '@/lib/supabase'
 
 const router = useRouter()
 const route  = useRoute()
@@ -597,8 +679,194 @@ const fin   = useFinStore()
 const { run, toast } = useSaving()
 const fmt = fin.fmt
 
-// ── WhatsApp ──
+// ── Drawer core (declarado cedo para que os computeds abaixo possam usar) ──
 const drawerTab        = ref('dados')
+const drawerOpen       = ref(false)
+const drawerTitle      = ref('Novo Lead')
+const currentLeadId    = ref(null)
+const script           = ref('')
+const histEtapas       = ref([])
+const convCanal        = ref('whatsapp')
+const convDir          = ref('enviado')
+const convMsg          = ref('')
+
+// ── Lead reativo do drawer ──
+const drawerLead = computed(() =>
+  currentLeadId.value ? leads.leads.find(l => l.id === currentLeadId.value) ?? null : null
+)
+
+// ── Estado das abas extras do drawer ──
+const drawerFollowupDate    = ref('')
+const drawerFollowupObs     = ref('')
+const drawerParcelasLocal   = ref([])
+const drawerAnalisando      = ref(false)
+const drawerErroAnalise     = ref(null)
+const drawerFuAutoHorasLocal = ref(4)
+
+// Sync estado quando muda de aba ou lead
+watch([() => drawerTab.value, () => currentLeadId.value], () => {
+  if (!drawerLead.value) return
+  const l = drawerLead.value
+  if (drawerTab.value === 'followup') {
+    const d = l.proximo_followup
+    drawerFollowupDate.value = d ? toLocalDatetimeInput(d) : ''
+    drawerFollowupObs.value  = l.followup_obs ?? ''
+    const fuKey = wa.fuAutoKey(l)
+    drawerFuAutoHorasLocal.value = (fuKey && wa.fuAutoChats[fuKey]?.horas) || 4
+  }
+  if (drawerTab.value === 'financeiro') {
+    drawerParcelasLocal.value = JSON.parse(JSON.stringify(l.parcelas ?? []))
+  }
+  if (drawerTab.value === 'ia') {
+    drawerErroAnalise.value = null
+  }
+})
+
+// Transações vinculadas ao lead — prioriza tag 'lead:ID' no obs, fallback por nome do cli
+const drawerTransacoesLead = computed(() => {
+  if (!drawerLead.value) return []
+  const id   = drawerLead.value.id
+  const nome = (drawerLead.value.nome || '').toLowerCase()
+  return fin.fin
+    .filter(t => t.obs?.includes('lead:' + id) || (nome && t.cli?.toLowerCase() === nome))
+    .slice(0, 20)
+})
+
+// Motivo SDR fora do horário
+const drawerSdrForaMotivo = computed(() => {
+  const day  = new Date().getDay()
+  const dias = wa.sdrConfig.diasSemana || []
+  if (!dias.includes(day)) {
+    const NOMES = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    return `Fora dos dias configurados (${dias.map(d => NOMES[d]).join(', ') || '—'}) — SDR pausado`
+  }
+  return `Fora do horário — SDR pausado até ${wa.sdrConfig.horaInicio}`
+})
+
+function toLocalDatetimeInput(isoStr) {
+  if (!isoStr) return ''
+  const d = new Date(isoStr)
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
+// Salva campo direto no lead sem precisar do botão "Salvar"
+function saveField(field, value) {
+  if (!drawerLead.value) return
+  leads.upsert({ id: drawerLead.value.id, [field]: value ?? null })
+}
+
+// Follow-up manual
+async function drawerSaveFollowup() {
+  if (!drawerLead.value) return
+  await leads.upsert({
+    id: drawerLead.value.id,
+    proximo_followup: drawerFollowupDate.value ? new Date(drawerFollowupDate.value).toISOString() : null,
+    followup_obs: drawerFollowupObs.value || null,
+    followup_count: (drawerLead.value.followup_count ?? 0) + 1
+  })
+  toast('Follow-up salvo', 'ok')
+}
+
+// FuAuto
+async function drawerToggleFuAutoChat() {
+  const l = drawerLead.value
+  if (!l) return
+  const wasActive = wa.isFuAutoActive(l)
+  await wa.toggleFuAutoChat(l, drawerFuAutoHorasLocal.value)
+  if (!wasActive) {
+    const fuAt = new Date(Date.now() + drawerFuAutoHorasLocal.value * 3600000).toISOString()
+    await leads.upsert({ id: l.id, proximo_followup: fuAt })
+  }
+}
+
+async function drawerSaveFuAutoHoras() {
+  const l = drawerLead.value
+  if (!l) return
+  await wa.setFuAutoHoras(l, drawerFuAutoHorasLocal.value)
+  if (wa.isFuAutoActive(l)) {
+    const fuAt = new Date(Date.now() + drawerFuAutoHorasLocal.value * 3600000).toISOString()
+    await leads.upsert({ id: l.id, proximo_followup: fuAt })
+  }
+  toast('Configuração salva', 'ok')
+}
+
+// Financeiro — serviços
+const drawerServicosSearch = ref('')
+const drawerServicosOpen   = ref(false)
+
+const drawerServicosLead = computed(() =>
+  Array.isArray(drawerLead.value?.servicos) ? drawerLead.value.servicos : []
+)
+
+const drawerServicosDisponiveis = computed(() => {
+  const set = new Set()
+  for (const l of leads.leads) {
+    if (Array.isArray(l.servicos)) l.servicos.forEach(s => set.add(s))
+  }
+  return [...set].sort()
+})
+
+const drawerServicosFiltered = computed(() => {
+  const q = drawerServicosSearch.value.trim().toLowerCase()
+  const jaAdicionados = new Set(drawerServicosLead.value)
+  const lista = drawerServicosDisponiveis.value.filter(s => !jaAdicionados.has(s))
+  if (!q) return lista
+  return lista.filter(s => s.toLowerCase().includes(q))
+})
+
+function drawerAddServico(nome) {
+  const n = (nome || '').trim()
+  if (!n || !drawerLead.value) return
+  if (drawerServicosLead.value.includes(n)) { drawerServicosSearch.value = ''; return }
+  const atualizado = [...drawerServicosLead.value, n]
+  leads.upsert({ id: drawerLead.value.id, servicos: atualizado })
+  drawerServicosSearch.value = ''
+  drawerServicosOpen.value = false
+}
+
+function drawerRemoveServico(nome) {
+  if (!drawerLead.value) return
+  const atualizado = drawerServicosLead.value.filter(s => s !== nome)
+  leads.upsert({ id: drawerLead.value.id, servicos: atualizado })
+}
+
+// Financeiro — parcelas
+function drawerAdicionarParcela() {
+  drawerParcelasLocal.value.push({ numero: drawerParcelasLocal.value.length + 1, valor: null, vencimento: null, pago: false })
+}
+function drawerSaveParcelas() {
+  if (!drawerLead.value) return
+  leads.upsert({ id: drawerLead.value.id, parcelas: drawerParcelasLocal.value })
+}
+function drawerTogglePago(idx) {
+  drawerParcelasLocal.value[idx].pago = !drawerParcelasLocal.value[idx].pago
+  drawerSaveParcelas()
+}
+
+// IA — análise de conversa
+async function drawerAnalisarLead() {
+  if (!drawerLead.value) return
+  drawerAnalisando.value  = true
+  drawerErroAnalise.value = null
+  try {
+    const loaded = await leads.loadConversas(drawerLead.value.id, { noStore: true })
+    const msgs = (loaded || [])
+      .filter(c => c.canal === 'whatsapp')
+      .slice(-50)
+      .map(m => ({ direcao: m.direcao, mensagem: (m.mensagem || '').slice(0, 500), data: m.data }))
+    const { data, error } = await sb.functions.invoke('analyze-lead', {
+      body: { leadId: drawerLead.value.id, messages: msgs }
+    })
+    if (error) throw error
+    await leads.upsert({ id: drawerLead.value.id, analise_ia: { ...data, geradoEm: new Date().toISOString() } })
+  } catch {
+    drawerErroAnalise.value = 'Erro ao analisar. Tente novamente.'
+  } finally {
+    drawerAnalisando.value = false
+  }
+}
+
+// ── WhatsApp ──
 const waMensagem       = ref('')
 const waTemplateId     = ref('')
 const waGerandoScript  = ref(false)
@@ -677,9 +945,6 @@ const selEtapa    = ref('')
 const sortKey     = ref('')
 const sortDir     = ref('asc')
 
-// Card modal (kanban expandido)
-const cardModal = ref(null)
-function openCardModal(lead) { cardModal.value = lead }
 
 // Copy toast
 const copyToast = ref(false)
@@ -711,16 +976,6 @@ async function onDrop(etapaDestino) {
   if (vaiFicarFechado) { fecharLead.value = leads.getById(lead.id) || payload; fecharOpen.value = true }
 }
 function onNegocioFechado() { fecharOpen.value = false; fecharLead.value = null }
-
-// Drawer
-const drawerOpen    = ref(false)
-const drawerTitle   = ref('Novo Lead')
-const currentLeadId = ref(null)
-const script        = ref('')
-const histEtapas    = ref([])
-const convCanal     = ref('whatsapp')
-const convDir       = ref('enviado')
-const convMsg       = ref('')
 
 // Follow-up campos separados data + hora
 const fuDate = ref('')
@@ -850,6 +1105,34 @@ const ETAPA_LABEL = { contato:'Contato', interesse:'Interesse', demo:'Demo envia
 const ETAPA_COLOR = { contato:'#3b82f6', interesse:'#f59e0b', demo:'#8b5cf6', negociacao:'#f97316', fechado:'#22c55e', perdido:'#6b7280' }
 function etapaLabel(e) { return ETAPA_LABEL[e] || e }
 function etapaColor(e) { return ETAPA_COLOR[e] || '#6b7280' }
+function diasNaEtapa(l) {
+  const ref = l.etapa_since || l.updated_at || l.created_at
+  if (!ref) return null
+  const dias = Math.floor((Date.now() - new Date(ref).getTime()) / 86400000)
+  if (dias === 0) return 'hoje'
+  if (dias === 1) return '1 dia'
+  return `${dias} dias`
+}
+
+// Timeline do histórico — mensagens + eventos de sistema ordenados por data
+const drawerTimeline = computed(() =>
+  [...leads.conversas].sort((a, b) => new Date(b.data) - new Date(a.data))
+)
+
+// Helpers para transações do modal de fechamento
+// tipo pode ser 'entrada' (FecharNegocioModal) ou 'receita' (Financeiro manual)
+function isEntrada(t) { return t.tipo === 'entrada' || t.tipo === 'receita' }
+// st pode ser 'recebido' (FecharNegocioModal) ou 'pago' (Financeiro manual)
+function isPago(t)    { return t.st === 'recebido' || t.st === 'pago' }
+
+// Data sem offset UTC (datas YYYY-MM-DD são meia-noite UTC → dia anterior no Brasil)
+function fmtTxDate(d) {
+  if (!d) return '—'
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) return `${m[3]}/${m[2]}/${m[1].slice(2)}`
+  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
+
 function fmtDataHora(d) {
   if (!d) return '—'
   const dt = new Date(d)
@@ -903,6 +1186,7 @@ async function openLead(id) {
   const l = leads.getById(id); if (!l) return
   currentLeadId.value=id; drawerTitle.value=l.nome; script.value=''
   leads.drawerLeadId=id; drawerTab.value='dados'
+  drawerErroAnalise.value=null; drawerAnalisando.value=false; drawerParcelasLocal.value=[]
   waMensagem.value=''; waTemplateId.value=''
   form.value={nome:l.nome||'',negocio:l.negocio||'',telefone:l.telefone||'',categoria:l.categoria||'',cidade:l.cidade||'',instagram:l.instagram||'',site_atual:l.site_atual||'',etapa:l.etapa||'contato',prioridade:l.prioridade||'media',valor_estimado:l.valor_estimado||'',proximo_followup:l.proximo_followup||'',notas:l.notas||''}
   syncFuFields()
@@ -970,28 +1254,7 @@ async function addConversa() {
   convMsg.value=''
 }
 
-// ── Notas inline no card modal ──
-const cardNotasEdit = ref('')
-watch(cardModal, l => { cardNotasEdit.value = l?.notas || '' })
-
-async function salvarNotas() {
-  if (!cardModal.value) return
-  const novas = cardNotasEdit.value.trim()
-  if (novas === (cardModal.value.notas || '').trim()) return
-  const atualizado = { ...cardModal.value, notas: novas }
-  cardModal.value = atualizado
-  await run(() => leads.upsert(atualizado), 'Nota salva')
-}
-
 // ── Follow-up ──
-const fuPickerOpen = ref(false)
-const fuOpts = [
-  { h: 3,  label: '3 horas'  },
-  { h: 6,  label: '6 horas'  },
-  { h: 12, label: '12 horas' },
-  { h: 24, label: '24 horas' },
-]
-
 async function concluirFollowUp(lead) {
   await run(() => leads.upsert({ ...lead, proximo_followup: null }), 'Follow-up concluído')
 }
@@ -1000,13 +1263,6 @@ async function concluirRelead(lead) {
   await run(() => leads.upsert({ ...lead, relead_data: null }), 'Relead concluído')
 }
 
-async function agendarFollowUp(lead, horas) {
-  const future = new Date(Date.now() + horas * 60 * 60 * 1000)
-  const iso = future.toISOString()
-  const idx = leads.leads.findIndex(l => l.id === lead.id)
-  if (idx !== -1) leads.leads[idx] = { ...leads.leads[idx], proximo_followup: iso }
-  run(() => leads.upsert({ ...lead, proximo_followup: iso, updated_at: new Date().toISOString() }), `Follow-up em ${horas}h agendado`)
-}
 
 async function followUp24h(lead) {
   const ts = new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -1080,6 +1336,7 @@ onMounted(async () => {
   const s = await getSubscriptionStatus()
   notifAtiva.value = s === 'granted'
   if (route.query.tab) tab.value = route.query.tab
+  if (route.query.lead) openLead(route.query.lead)
 })
 
 watch(() => route.query.tab, (t) => { if (t) tab.value = t })
@@ -1135,6 +1392,10 @@ async function pedirNotificacao() {
 .kb-drag-handle{position:absolute;top:.5rem;right:.5rem;color:var(--text-tertiary);opacity:0;transition:opacity 100ms ease;cursor:grab;}
 .kb-card:hover .kb-drag-handle{opacity:.5;}
 .kb-name{font-size:.82rem;font-weight:600;color:var(--text-primary);margin-bottom:.1rem;}
+.kb-etapa-tempo{font-size:.65rem;color:var(--text-tertiary);margin-bottom:.15rem;}
+.kb-interacao{display:inline-flex;align-items:center;gap:.2rem;font-size:.62rem;font-weight:700;padding:.1rem .35rem;border-radius:99px;}
+.kb-interacao--in{background:rgba(34,197,94,.12);color:var(--accent);}
+.kb-interacao--out{background:rgba(136,136,136,.1);color:var(--text-tertiary);}
 .kb-negocio{font-size:.7rem;color:var(--text-tertiary);margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .kb-neg{font-size:.72rem;color:var(--text-tertiary);margin-bottom:.375rem;}
 .kb-servico{font-size:.65rem;color:var(--status-info);margin-bottom:.375rem;}
@@ -1185,29 +1446,11 @@ async function pedirNotificacao() {
 .fu-card-right{display:flex;flex-direction:column;gap:.375rem;justify-content:center;flex-shrink:0;}
 .fu-concluido{gap:.375rem;}
 
-/* Card modal */
-.card-modal{background:rgba(18,18,18,0.38);backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);border:1px solid rgba(255,255,255,0.08);box-shadow:0 28px 72px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.05) inset;border-radius:var(--radius-xl, 16px);width:100%;max-width:480px;overflow:hidden;will-change:opacity;}
-[data-theme="light"] .card-modal{background:rgba(255,255,255,0.88);border:1px solid rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,.12);}
+/* Relead modal — usa card-modal-* classes compartilhadas */
 .card-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1.25rem 1.25rem .875rem;}
 .card-modal-name{font-size:1.125rem;font-weight:700;color:var(--text-primary);margin:0;}
 .card-modal-neg{font-size:.8125rem;color:var(--text-tertiary);margin:.2rem 0 0;}
-.card-modal-actions{display:flex;align-items:center;gap:.375rem;flex-shrink:0;}
 .card-modal-body{padding:.25rem 1.25rem 1rem;}
-.card-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:.625rem .875rem;}
-.cm-item{display:flex;flex-direction:column;gap:.15rem;}
-.cm-label{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary);}
-.cm-val{font-size:.875rem;color:var(--text-primary);}
-.cm-notas{margin-top:.875rem;padding-top:.875rem;border-top:1px solid var(--border-subtle);}
-.cm-notas-textarea{
-  margin-top:.375rem;font-size:.8125rem;line-height:1.5;resize:vertical;min-height:68px;
-  background:rgba(255,255,255,.05) !important;
-  border:1px solid rgba(255,255,255,.08) !important;
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-}
-.cm-notas-textarea:focus{border-color:rgba(34,197,94,.4) !important;outline:none;box-shadow:0 0 0 3px rgba(34,197,94,.08);}
-[data-theme="light"] .cm-notas-textarea{background:rgba(0,0,0,.04) !important;border:1px solid rgba(0,0,0,.08) !important;}
-[data-theme="light"] .cm-notas-textarea:focus{border-color:rgba(34,197,94,.5) !important;}
 .card-modal-footer{display:flex;align-items:center;gap:.5rem;padding:.875rem 1.25rem;border-top:1px solid var(--border-default);}
 .modal-fade-enter-active,.modal-fade-leave-active{transition:opacity 200ms ease;}
 .modal-fade-enter-from,.modal-fade-leave-to{opacity:0;}
@@ -1223,10 +1466,10 @@ async function pedirNotificacao() {
 .drawer{position:fixed;top:0;right:0;height:100vh;width:420px;max-width:95vw;background:rgba(18,18,18,0.38);backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);border-left:1px solid rgba(255,255,255,0.08);box-shadow:-8px 0 40px rgba(0,0,0,.5);z-index:801;display:flex;flex-direction:column;overflow:hidden;}
 [data-theme="light"] .drawer{background:rgba(255,255,255,0.88);border-left:1px solid rgba(0,0,0,0.08);box-shadow:-8px 0 40px rgba(0,0,0,.1);}
 /* Drawer tabs */
-.drawer-tabs{display:flex;gap:2px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);padding:0 1rem;flex-shrink:0;}
-.drawer-tab{display:flex;align-items:center;gap:5px;padding:.55rem .7rem;font-size:.78rem;font-weight:600;color:var(--text-tertiary);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;}
+.drawer-tabs{display:flex;gap:2px;background:transparent;border-bottom:1px solid var(--border-subtle);padding:0 1rem;flex-shrink:0;}
+.drawer-tab{display:flex;align-items:center;gap:5px;padding:.55rem .7rem;font-size:.78rem;font-weight:500;color:var(--text-tertiary);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;font-family:var(--font-body);}
 .drawer-tab:hover{color:var(--text-secondary);}
-.drawer-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.drawer-tab.active{color:var(--text-primary);border-bottom-color:var(--accent);font-weight:600;}
 /* Aba WhatsApp */
 .wa-tab{display:flex;flex-direction:column;height:100%;}
 .wa-msgs{flex:1;overflow-y:auto;padding:.875rem 1.25rem;display:flex;flex-direction:column;gap:.5rem;min-height:160px;max-height:240px;}
@@ -1254,6 +1497,11 @@ async function pedirNotificacao() {
 .script-box{background:var(--bg-overlay);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:.75rem;font-size:.8rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6;}
 .hist-row{display:flex;align-items:center;gap:.375rem;font-size:.78rem;color:var(--text-tertiary);}
 .hist-time{margin-left:auto;font-size:.7rem;}
+/* Timeline de histórico */
+.tl-event{display:flex;align-items:center;gap:.5rem;padding:.25rem 0;position:relative;}
+.tl-event-dot{width:7px;height:7px;border-radius:50%;background:var(--text-tertiary);flex-shrink:0;opacity:.5;}
+.tl-event-text{flex:1;font-size:.75rem;color:var(--text-tertiary);font-style:italic;}
+.tl-event-time{font-size:.68rem;color:var(--text-tertiary);opacity:.7;white-space:nowrap;}
 .conv-list{display:flex;flex-direction:column;gap:.375rem;}
 .conv-empty{font-size:.78rem;color:var(--text-tertiary);text-align:center;padding:.5rem;}
 .conv-item{background:var(--bg-overlay);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:.5rem .625rem;}
@@ -1329,16 +1577,6 @@ async function pedirNotificacao() {
 /* Botões novos */
 .btn-warning{background:rgba(245,158,11,.15);color:#d97706;border:1px solid rgba(245,158,11,.35);}
 .btn-warning:hover{background:rgba(245,158,11,.25);color:#b45309;}
-.fu-picker-wrap{position:relative;}
-.fu-picker-toggle{gap:.375rem;}
-.fu-opts{position:absolute;bottom:calc(100% + 6px);left:0;min-width:120px;background:rgba(18,18,18,0.6);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden;z-index:10;}
-[data-theme="light"] .fu-opts{background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,.8);}
-.fu-opt{display:block;width:100%;padding:.5rem .875rem;background:transparent;border:none;font-family:var(--font-body);font-size:.8125rem;font-weight:500;color:var(--text-primary);text-align:left;cursor:pointer;transition:background 100ms ease;}
-.fu-opt:hover{background:rgba(245,158,11,.15);color:#d97706;}
-.fu-opts-enter-active{transition:all 180ms cubic-bezier(.34,1.56,.64,1);}
-.fu-opts-leave-active{transition:all 120ms ease;}
-.fu-opts-enter-from{opacity:0;transform:translateY(6px) scale(.97);}
-.fu-opts-leave-to{opacity:0;transform:translateY(4px);}
 .btn-purple{background:rgba(139,92,246,.15);color:#7c3aed;border:1px solid rgba(139,92,246,.35);}
 .btn-purple:hover{background:rgba(139,92,246,.25);color:#6d28d9;}
 
@@ -1360,6 +1598,65 @@ async function pedirNotificacao() {
   opacity: 1;
 }
 .btn-notif-on:disabled { opacity: 1; cursor: default; }
+
+/* Serviços chips + dropdown */
+.serv-chips{display:flex;flex-wrap:wrap;gap:.375rem;margin-bottom:.5rem;}
+.serv-chip{display:inline-flex;align-items:center;gap:.3rem;background:var(--accent-subtle);border:1px solid rgba(34,197,94,.25);color:var(--accent);font-size:.75rem;font-weight:600;padding:.2rem .55rem .2rem .6rem;border-radius:99px;}
+.serv-chip-rm{display:flex;align-items:center;background:none;border:none;cursor:pointer;color:var(--accent);opacity:.6;padding:0;line-height:1;}
+.serv-chip-rm:hover{opacity:1;}
+.serv-input-wrap{position:relative;}
+.serv-input-row{display:flex;gap:.375rem;}
+.serv-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:var(--radius-md);box-shadow:var(--shadow-md);z-index:50;max-height:180px;overflow-y:auto;}
+.serv-dropdown-item{display:block;width:100%;text-align:left;background:none;border:none;padding:.5rem .75rem;font-size:.82rem;color:var(--text-primary);font-family:var(--font-body);cursor:pointer;transition:background .1s;}
+.serv-dropdown-item:hover{background:var(--bg-overlay);}
+
+/* Transações vinculadas no CRM drawer */
+.crmtx-row{display:flex;flex-direction:column;gap:.2rem;padding:.5rem .625rem;background:var(--bg-overlay);border:1px solid var(--border-subtle);border-radius:var(--radius-md);margin-bottom:.375rem;}
+.crmtx-row:last-child{margin-bottom:0;}
+.crmtx-top{display:flex;align-items:center;gap:.5rem;}
+.crmtx-desc{flex:1;font-size:.8rem;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.crmtx-val{font-size:.82rem;font-weight:700;flex-shrink:0;}
+.crmtx-val--in{color:var(--accent);}
+.crmtx-val--out{color:var(--status-danger);}
+.crmtx-bottom{display:flex;align-items:center;gap:.5rem;}
+.crmtx-date{font-size:.7rem;color:var(--text-tertiary);flex:1;}
+.tx-st-badge{font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:99px;white-space:nowrap;flex-shrink:0;}
+.tx-st--pago{background:var(--accent-subtle);color:var(--accent);}
+.tx-st--pend{background:rgba(245,158,11,.12);color:var(--status-warning);}
+
+/* Drawer tab indicator dot */
+.drawer-tab-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:2px;}
+
+/* SDR / FuAuto toggle pill */
+.sz-sdr-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;}
+.sz-sdr-toggle-title{font-size:.82rem;font-weight:600;color:var(--text-primary);margin:0 0 2px;}
+.sz-sdr-toggle-sub{font-size:.75rem;color:var(--text-tertiary);margin:0;}
+.sz-sdr-pill{width:40px;height:22px;border-radius:11px;background:var(--bg-overlay);border:1px solid var(--border-default);cursor:pointer;position:relative;transition:background .2s,border-color .2s;flex-shrink:0;}
+.sz-sdr-pill--on{background:var(--accent);border-color:var(--accent);}
+.sz-sdr-pill:disabled{opacity:.4;cursor:not-allowed;}
+.sz-sdr-pill-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;}
+.sz-sdr-pill--on .sz-sdr-pill-thumb{transform:translateX(18px);}
+.sz-sdr-active-info{background:var(--accent-subtle);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius-md);padding:8px 12px;display:flex;flex-direction:column;gap:4px;}
+.sz-sdr-active-row{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--accent);}
+.sz-sdr-active-row--warn{color:var(--status-warning);}
+.sz-sdr-section-warn{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--status-warning);background:rgba(232,168,56,.1);border:1px solid rgba(232,168,56,.25);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:12px;}
+.sz-sdr-link{color:var(--accent);}
+
+/* Parcelas */
+.sz-parcela-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.sz-parcela-num{font-size:12px;color:var(--text-tertiary);min-width:24px;}
+.sz-parcela-input{flex:1;min-width:0;}
+.sz-parcela-pago{display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--text-secondary);cursor:pointer;white-space:nowrap;}
+
+/* Análise IA */
+.sz-analise-item{display:flex;align-items:flex-start;gap:8px;font-size:.82rem;color:var(--text-primary);margin-bottom:6px;}
+
+/* Typing indicator */
+.sz-typing{display:flex;gap:4px;align-items:center;}
+.sz-typing span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:sz-bounce 1s infinite;}
+.sz-typing span:nth-child(2){animation-delay:.15s;}
+.sz-typing span:nth-child(3){animation-delay:.3s;}
+@keyframes sz-bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
 
 @media(max-width:1200px){.kanban-board{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:768px){.kanban-board{grid-template-columns:repeat(2,1fr);}.drawer{width:100%;}.fu-card{flex-wrap:wrap;}.card-modal-grid{grid-template-columns:1fr;}}

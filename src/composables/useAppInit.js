@@ -185,6 +185,11 @@ export async function useAppInit() {
       if (nova.lead_id === leads.drawerLeadId) {
         leads.conversas.push(nova)
       }
+      // Atualiza indicador de última interação no lead
+      if (nova.lead_id && nova.direcao) {
+        const lead = leads.leads.find(l => l.id === nova.lead_id)
+        if (lead) lead.ultima_direcao = nova.direcao
+      }
       if (nova.canal === 'whatsapp' && nova.direcao === 'recebido') {
         const key = nova.lead_id || nova.telefone || ''
         wa.storeIncrementUnread(key)
@@ -206,6 +211,11 @@ export async function useAppInit() {
       wa.lastWaMsg = nova   // SlacZapView reage via watch
       if (nova.lead_id === leads.drawerLeadId) {
         leads.conversas.push(nova)
+      }
+      // Atualiza indicador de última interação no lead
+      if (nova.lead_id && nova.direcao) {
+        const lead = leads.leads.find(l => l.id === nova.lead_id)
+        if (lead) lead.ultima_direcao = nova.direcao
       }
       const key = nova.lead_id || nova.telefone || ''
       wa.storeIncrementUnread(key)

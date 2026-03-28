@@ -347,6 +347,7 @@
   </Teleport>
 
   <ConfigModal v-model="configOpen" />
+  <SlacOptsModal />
 </template>
 
 <script setup>
@@ -359,6 +360,7 @@ import { useWaStore } from '@/stores/wa'
 import { useAppInit } from '@/composables/useAppInit'
 import { useTheme } from '@/composables/useTheme'
 import ConfigModal from '@/components/layout/ConfigModal.vue'
+import SlacOptsModal from '@/components/layout/SlacOptsModal.vue'
 
 const router = useRouter()
 const route  = useRoute()

@@ -56,6 +56,22 @@ export const useLeadsStore = defineStore('leads', () => {
     return paged ? [...(data || [])].reverse() : (data || [])
   }
 
+  // Loga evento de sistema na conversa (etapa/prioridade) — sem alterar ultima_direcao
+  function _logEvent(leadId, mensagem) {
+    if (!leadId) return
+    const nova = {
+      id: 'ev' + Date.now() + Math.random().toString(36).slice(2, 7),
+      user_id: uid(), lead_id: leadId,
+      canal: 'sistema', direcao: 'sistema',
+      mensagem, data: new Date().toISOString()
+    }
+    sb.from('conversas').insert(nova).then(() => {})
+    // Injeta na lista reativa se o drawer deste lead está aberto
+    if (leadId === drawerLeadId.value) {
+      conversas.value.push(nova)
+    }
+  }
+
   // ── Internal (não empurra undo stack) ──
   async function _upsert(payload) {
     const { error } = await sb.from('leads').upsert(
@@ -74,10 +90,21 @@ export const useLeadsStore = defineStore('leads', () => {
     sb.from('leads').delete().eq('id', id).eq('user_id', uid()).then(() => {})
   }
 
+  const ETAPA_LABEL = { contato: 'Contato', interesse: 'Interesse', demo: 'Demo enviada', negociacao: 'Negociação', fechado: 'Fechado', perdido: 'Perdido' }
+  const PRI_LABEL   = { alta: 'Alta', media: 'Média', baixa: 'Baixa' }
+
   // ── Public (rastreia undo) ──
   async function upsert(payload) {
     const prev = leads.value.find(l => l.id === payload.id)
     undoStack.value.push({ action: 'upsert', prev: prev ? { ...prev } : null, id: payload.id })
+    // Grava timestamp de entrada na etapa quando ela muda + loga evento
+    if (payload.etapa && prev && prev.etapa !== payload.etapa) {
+      payload = { ...payload, etapa_since: new Date().toISOString() }
+      _logEvent(payload.id, `Etapa: ${ETAPA_LABEL[prev.etapa] || prev.etapa} → ${ETAPA_LABEL[payload.etapa] || payload.etapa}`)
+    }
+    if (payload.prioridade && prev && prev.prioridade !== payload.prioridade) {
+      _logEvent(payload.id, `Prioridade: ${PRI_LABEL[prev.prioridade] || prev.prioridade} → ${PRI_LABEL[payload.prioridade] || payload.prioridade}`)
+    }
     await _upsert(payload)
   }
 
@@ -109,6 +136,12 @@ export const useLeadsStore = defineStore('leads', () => {
     const { error } = await sb.from('conversas').insert(nova)
     if (error) throw error
     conversas.value.push(nova)
+    // Atualiza indicador no lead
+    const lead = leads.value.find(l => l.id === leadId)
+    if (lead) {
+      lead.ultima_direcao = direcao
+      sb.from('leads').update({ ultima_direcao: direcao }).eq('id', leadId).then(() => {})
+    }
     return nova
   }
 

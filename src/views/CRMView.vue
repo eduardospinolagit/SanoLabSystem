@@ -576,7 +576,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import FecharNegocioModal from '@/components/crm/FecharNegocioModal.vue'
 import { useLeadsStore, ETAPAS } from '@/stores/leads'
 import { useWorkStore } from '@/stores/work'
@@ -587,6 +587,7 @@ import { useSaving } from '@/composables/useSaving'
 import { usePushNotifications } from '@/composables/usePushNotifications'
 
 const router = useRouter()
+const route  = useRoute()
 const wa = useWaStore()
 
 const leads = useLeadsStore()
@@ -1078,7 +1079,10 @@ const { subscribe, getSubscriptionStatus } = usePushNotifications()
 onMounted(async () => {
   const s = await getSubscriptionStatus()
   notifAtiva.value = s === 'granted'
+  if (route.query.tab) tab.value = route.query.tab
 })
+
+watch(() => route.query.tab, (t) => { if (t) tab.value = t })
 
 async function pedirNotificacao() {
   if (notifAtiva.value) return

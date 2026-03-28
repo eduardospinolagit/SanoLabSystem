@@ -2663,6 +2663,8 @@ async function saveFollowup() {
     followup_count: (activeCrmLead.value.followup_count ?? 0) + 1
   })
   toast('Follow-up salvo', 'ok')
+  opcoesSLACOpen.value = false
+  router.push('/crm?tab=followup')
 }
 
 const transacoesLead = computed(() => {

@@ -112,21 +112,21 @@
             }
 
             // Fonte 1: chat.contact da lista (já carregado em memória)
-            // wid = WhatsApp ID (@c.us) — o JID real do contato no Multi-Device
-            phone = cleanPhone(chat.contact?.phone)
+            // __x_phoneNumber é acessado como contact.phoneNumber (getter do modelo WPP)
+            phone = cleanPhone(chat.contact?.phoneNumber)
+              || cleanPhone(chat.contact?.phone)
               || cleanPhone(chat.contact?.formattedUser)
               || cleanPhone(chat.contact?.wid?.user)
-              || cleanPhone((chat.contact?.wid?._serialized || '').replace(/@[\w.]+/g, ''))
               || null
 
             // Fonte 2: WPP.contact.get()
             if (!phone) {
               try {
                 const c = await window.WPP.contact.get(chatId)
-                phone = cleanPhone(c?.phone)
+                phone = cleanPhone(c?.phoneNumber)
+                  || cleanPhone(c?.phone)
                   || cleanPhone(c?.formattedUser)
                   || cleanPhone(c?.wid?.user)
-                  || cleanPhone((c?.wid?._serialized || '').replace(/@[\w.]+/g, ''))
                   || null
               } catch {}
             }
@@ -156,27 +156,7 @@
               }
             }
 
-            // Diagnóstico: loga o objeto completo para @lid não resolvido
-            if (!phone) {
-              console.warn('[SLAC Bridge] @lid sem resolução:', chatId)
-              try {
-                const c = await window.WPP.contact.get(chatId)
-                console.warn('[SLAC Bridge] campos disponíveis:', Object.keys(c || {}))
-                console.warn('[SLAC Bridge] contact raw:', JSON.stringify({
-                  phone: c?.phone,
-                  formattedUser: c?.formattedUser,
-                  wid: c?.wid,
-                  id: c?.id,
-                  phoneWithCC: c?.phoneWithCC,
-                  peerJid: c?.peerJid,
-                  lid: c?.lid,
-                  hash: c?.hash,
-                }))
-              } catch (e) {
-                console.warn('[SLAC Bridge] WPP.contact.get erro:', e.message)
-              }
-              phone = lidId
-            }
+            if (!phone) phone = lidId // sem resolução — usa @lid ID como fallback
 
           } else {
             phone = phone.replace(/^55/, '')

@@ -2615,7 +2615,7 @@ async function openChat(chatLead) {
   scrollToUnreadOrBottom()
   nextTick(() => inputEl.value?.focus())
   clearInterval(msgPoller)
-  msgPoller = setInterval(pollMsgs, 3000)
+  msgPoller = setInterval(pollMsgs, 5000)
 }
 
 function closeChat() {
@@ -2853,7 +2853,8 @@ async function fetchUnreadCounts() {
 // ── Realtime ──
 let realtimeChannel = null
 let statusTimer = null
-let msgPoller = null
+let chatsTimer  = null
+let msgPoller   = null
 let fuAutoTimer = null
 
 let _polling = false
@@ -2869,7 +2870,7 @@ async function pollMsgs() {
       .eq('user_id', uid())
       .eq('canal', 'whatsapp')
       .order('data', { ascending: true })
-    if (lastTs) q = q.gte('data', lastTs)
+    if (lastTs) q = q.gte('data', lastTs).limit(50)
     else q = q.limit(50)
     if (activeLead.value.id) {
       q = q.eq('lead_id', activeLead.value.id)
@@ -2955,14 +2956,16 @@ onMounted(async () => {
   // Carrega configs do SDR, Follow-up automático e script
   await Promise.all([wa.loadSdrConfig({ includeChats: false }), wa.loadFuAutoConfig(), wa.loadConfig()])
 
-  // Verifica status do servidor local e inicia polling
+  // Verifica status do servidor local — a cada 15s (só status, sem queries pesadas)
   await wa.checkStatus()
-  statusTimer = setInterval(async () => {
-    await wa.checkStatus()
+  statusTimer = setInterval(() => wa.checkStatus(), 15000)
+
+  // loadChats + unread + lastSeen — a cada 90s (era 15s, reduzia egress drasticamente)
+  chatsTimer = setInterval(async () => {
     await wa.loadChats()
     await fetchUnreadCounts()
     await syncLastSeen()
-  }, 15000)
+  }, 90000)
 
   loading.value = true
   await Promise.all([wa.loadChats(), work.load()])
@@ -3056,6 +3059,7 @@ onUnmounted(() => {
   document.removeEventListener('click', onDocClick, true)
   if (realtimeChannel) sb.removeChannel(realtimeChannel)
   clearInterval(statusTimer)
+  clearInterval(chatsTimer)
   clearInterval(msgPoller)
   clearInterval(fuAutoTimer)
   cancelRecording()

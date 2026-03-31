@@ -156,7 +156,27 @@
               }
             }
 
-            if (!phone) phone = lidId // sem resolução — usa o @lid ID como fallback
+            // Diagnóstico: loga o objeto completo para @lid não resolvido
+            if (!phone) {
+              console.warn('[SLAC Bridge] @lid sem resolução:', chatId)
+              try {
+                const c = await window.WPP.contact.get(chatId)
+                console.warn('[SLAC Bridge] campos disponíveis:', Object.keys(c || {}))
+                console.warn('[SLAC Bridge] contact raw:', JSON.stringify({
+                  phone: c?.phone,
+                  formattedUser: c?.formattedUser,
+                  wid: c?.wid,
+                  id: c?.id,
+                  phoneWithCC: c?.phoneWithCC,
+                  peerJid: c?.peerJid,
+                  lid: c?.lid,
+                  hash: c?.hash,
+                }))
+              } catch (e) {
+                console.warn('[SLAC Bridge] WPP.contact.get erro:', e.message)
+              }
+              phone = lidId
+            }
 
           } else {
             phone = phone.replace(/^55/, '')

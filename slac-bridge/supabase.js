@@ -57,6 +57,16 @@ export async function checkConversa(id, token) {
   return Array.isArray(data) && data.length > 0
 }
 
+// Busca todos os leads do usuário (id + telefone) para mapear phone → lead_id no sync
+export async function fetchLeads(userId, token) {
+  return sbFetch(
+    `/rest/v1/leads?user_id=eq.${userId}&select=id,telefone&limit=9999`,
+    'GET',
+    null,
+    token
+  )
+}
+
 // Busca últimos 50 logs do usuário
 export async function fetchLogs(userId, token) {
   return sbFetch(

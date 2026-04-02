@@ -247,8 +247,13 @@
         </div>
       </div>
 
+      <!-- Erro -->
+      <div v-if="aiConvError && !aiConvLoading" class="ai-conv-empty ai-conv-empty--error">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--status-danger)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p>{{ aiConvError }}</p>
+      </div>
       <!-- Vazio -->
-      <div v-if="!aiConvData && !aiConvLoading" class="ai-conv-empty">
+      <div v-else-if="!aiConvData && !aiConvLoading" class="ai-conv-empty">
         <p>Clique em <strong>Analisar agora</strong> para gerar uma análise inteligente do seu funil de vendas.</p>
       </div>
 
@@ -380,13 +385,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, inject } from 'vue'
 import { useFinStore } from '@/stores/fin'
 import { useLeadsStore } from '@/stores/leads'
 import { useWaStore } from '@/stores/wa'
 import { useTheme } from '@/composables/useTheme'
 import { sb } from '@/lib/supabase'
 import InfoTip from '@/components/ui/InfoTip.vue'
+
+const toast = inject('toast')
 
 const fin   = useFinStore()
 const leads = useLeadsStore()
@@ -399,6 +406,7 @@ const AI_CONV_KEY   = 'slac-ai-conv'
 const aiConvLoading = ref(false)
 const aiConvData    = ref(null)
 const aiConvTs      = ref('')
+const aiConvError   = ref('')
 
 // Carrega do localStorage na inicialização
 ;(() => {
@@ -459,6 +467,7 @@ const aiConvRingColor = computed(() => {
 async function analisarConversao() {
   if (aiConvLoading.value) return
   aiConvLoading.value = true
+  aiConvError.value   = ''
   try {
     const etapas = { contato: 0, interesse: 0, demo: 0, negociacao: 0, fechado: 0, perdido: 0 }
     leads.leads.forEach(l => { if (etapas[l.etapa] !== undefined) etapas[l.etapa]++ })
@@ -527,6 +536,8 @@ async function analisarConversao() {
     localStorage.setItem(AI_CONV_KEY, JSON.stringify({ data, ts, savedDate }))
   } catch (e) {
     console.error('[analisar-conversao]', e)
+    aiConvError.value = String(e?.message || e)
+    toast?.('Erro na análise de conversão: ' + aiConvError.value, 'error')
   } finally {
     aiConvLoading.value = false
   }
@@ -819,6 +830,7 @@ watch(theme, renderCharts)
   padding: .25rem 0;
 }
 .ai-conv-empty strong { color: var(--text-primary); }
+.ai-conv-empty--error { display: flex; align-items: flex-start; gap: .4rem; color: var(--status-danger); }
 
 /* Skeleton */
 .ai-conv-skeleton { display: flex; gap: 1rem; align-items: center; padding: .25rem 0; }

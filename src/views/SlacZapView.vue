@@ -71,9 +71,9 @@
                     Adicionar conta
                   </button>
                   <div class="sz-opcoes-sep"></div>
-                  <button class="sz-opcoes-item" @click="togglePerdidosFilter">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                    {{ chatFilter === 'perdidos' ? 'Voltar ao início' : 'Leads Perdidos' }}
+                  <button class="sz-opcoes-item" @click="() => { opcoesGeralOpen = false; chatFilter = 'reativacao' }">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    Reativações
                   </button>
                   <button class="sz-opcoes-item" @click="marcarTodasLidas">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -108,6 +108,7 @@
 
           <button class="sz-filter-tab" :class="{ 'sz-filter-tab--active': chatFilter === 'relead' }" @click="chatFilter = 'relead'">Relead</button>
           <button class="sz-filter-tab" :class="{ 'sz-filter-tab--active': chatFilter === 'work' }" @click="chatFilter = 'work'">Tarefas</button>
+          <button class="sz-filter-tab" :class="{ 'sz-filter-tab--active': chatFilter === 'reativacao' }" @click="chatFilter = 'reativacao'">Reativação</button>
         </div>
       </div>
 
@@ -412,6 +413,14 @@
                     <span class="sz-bubble-time">{{ fmtHour(m.data) }}</span>
                   </div>
                 </template>
+                <!-- áudio histórico (sem URL) -->
+                <template v-else-if="bubbleMedia(m.mensagem)?.type === 'audio-stub'">
+                  <div class="sz-audio-stub" :class="m.direcao === 'enviado' ? 'sz-audio-stub--out' : 'sz-audio-stub--in'">
+                    <svg class="sz-audio-stub-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    <span class="sz-audio-stub-label">Áudio · não disponível no histórico</span>
+                  </div>
+                  <span class="sz-bubble-spacer"></span>
+                </template>
                 <!-- documento -->
                 <template v-else-if="bubbleMedia(m.mensagem)?.type === 'document'">
                   <a :href="bubbleMedia(m.mensagem).url" target="_blank" rel="noopener" class="sz-bubble-doc">
@@ -426,7 +435,7 @@
                 <template v-else>
                   <span class="sz-bubble-text">{{ m.mensagem }}<span class="sz-bubble-spacer"></span></span>
                 </template>
-                <span v-if="!bubbleMedia(m.mensagem) || bubbleMedia(m.mensagem).type === 'document'" class="sz-bubble-footer">
+                <span v-if="!bubbleMedia(m.mensagem) || bubbleMedia(m.mensagem).type === 'document' || bubbleMedia(m.mensagem).type === 'audio-stub'" class="sz-bubble-footer">
                   <span class="sz-bubble-time">{{ fmtHour(m.data) }}</span>
                   <span v-if="m.direcao === 'enviado'" class="sz-bubble-check" :class="`sz-bubble-check--${m.status || 'sent'}`">
                     <!-- pendente -->
@@ -661,6 +670,30 @@
       </div>
     </Transition>
 
+    <!-- ═══ MODAL REATIVAÇÃO ═══ -->
+    <Transition name="sz-modal-fade">
+      <div v-if="reativacaoModalOpen" class="sz-modal-overlay" @click.self="reativacaoModalOpen = false">
+        <div class="sz-modal sz-reat-modal">
+          <div class="sz-modal-header">
+            <p class="sz-modal-lead-name">Reativação de Lead</p>
+            <button class="sz-modal-close" @click="reativacaoModalOpen = false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="sz-reat-body">
+            <p class="sz-reat-name">{{ reativacaoChat?.lead?.nome || 'Lead' }}</p>
+            <label class="form-label">Mês de reativação</label>
+            <input v-model="reativacaoMes" type="month" class="form-input" />
+            <p class="sz-reat-hint">O lead sairá da aba "Tudo" e ficará em "Reativação" até a data escolhida.</p>
+          </div>
+          <div class="sz-reat-footer">
+            <button class="btn btn-secondary btn-sm" @click="reativacaoModalOpen = false">Cancelar</button>
+            <button class="btn btn-primary btn-sm" :disabled="!reativacaoMes" @click="confirmarReativacao">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- ═══ IMPORTAR CONVERSA ═══ -->
     <Transition name="sz-modal-fade">
       <div v-if="importModalOpen" class="sz-modal-overlay" @click.self="fecharImportModal" role="dialog" aria-label="Importar Conversa">
@@ -837,9 +870,9 @@
               Desativar Notificações
             </button>
             <div class="sz-item-menu-sep"></div>
-            <button class="sz-item-menu-item sz-item-menu-item--danger" @click="marcarPerdido()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              Lead Perdido
+            <button class="sz-item-menu-item" @click="abrirReativacao()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Reativação
             </button>
             <button class="sz-item-menu-item sz-item-menu-item--danger" @click="apagarConversa()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -1211,6 +1244,7 @@ function bubbleMedia(mensagem) {
   if (vidM) return { type: 'video', url: vidM[1], filename: '' }
   const docM = mensagem.match(/^\[DOC:([^\]]+)\]([\s\S]+)$/)
   if (docM) return { type: 'document', url: docM[2], filename: docM[1] }
+  if (mensagem === '[Áudio]') return { type: 'audio-stub' }
   return null
 }
 
@@ -2109,16 +2143,40 @@ function desativarNotificacoes() {
   activeItemMenu.value = null
 }
 
-async function marcarPerdido() {
+const reativacaoModalOpen = ref(false)
+const reativacaoMes       = ref('')
+const reativacaoChat      = ref(null)
+
+function abrirReativacao() {
   const chat = menuChat.value
   activeItemMenu.value = null
   if (!chat?.lead?.id) { toast('Lead não encontrado', 'error'); return }
+  reativacaoChat.value = chat
+  // Pré-preenche com o próximo mês
+  const d = new Date()
+  d.setMonth(d.getMonth() + 1)
+  reativacaoMes.value = d.toISOString().slice(0, 7)
+  reativacaoModalOpen.value = true
+}
+
+async function confirmarReativacao() {
+  const chat = reativacaoChat.value
+  if (!chat?.lead?.id || !reativacaoMes.value) return
+  reativacaoModalOpen.value = false
   try {
-    await leads.upsert({ id: chat.lead.id, etapa: 'perdido' })
-    toast('Lead marcado como perdido', 'ok')
+    // relead_data guarda o mês (primeiro dia do mês escolhido)
+    await leads.upsert({ id: chat.lead.id, etapa: 'reativacao', relead_data: reativacaoMes.value + '-01' })
+    toast('Lead em reativação para ' + fmtMesReativacao(reativacaoMes.value), 'ok')
   } catch {
-    toast('Erro ao atualizar lead', 'error')
+    toast('Erro ao salvar reativação', 'error')
   }
+}
+
+function fmtMesReativacao(mes) {
+  if (!mes) return ''
+  const [y, m] = mes.split('-')
+  const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+  return (nomes[parseInt(m) - 1] || m) + '/' + y
 }
 
 async function apagarConversa() {
@@ -2218,10 +2276,6 @@ function onDocClick(e) {
   }
 }
 
-function togglePerdidosFilter() {
-  opcoesGeralOpen.value = false
-  chatFilter.value = chatFilter.value === 'perdidos' ? 'tudo' : 'perdidos'
-}
 
 async function refreshChats() {
   if (refreshingChats.value) return
@@ -2485,6 +2539,15 @@ const filteredChats = computed(() => {
   const q = search.value.toLowerCase()
   let chats = wa.chats
   if (q) chats = chats.filter(c => c.lead.nome?.toLowerCase().includes(q) || c.lead.telefone?.includes(q))
+
+  // "Tudo" e "Não Lidas" excluem leads em reativação
+  if (chatFilter.value === 'tudo' || chatFilter.value === 'nao-lidas') {
+    chats = chats.filter(c => {
+      const fullLead = c.lead.id ? leads.leads.find(l => l.id === c.lead.id) : null
+      return fullLead?.etapa !== 'reativacao'
+    })
+  }
+
   if (chatFilter.value === 'nao-lidas') chats = chats.filter(c => isUnread(c))
   if (chatFilter.value === 'followup') {
     chats = chats.filter(c => {
@@ -2492,10 +2555,10 @@ const filteredChats = computed(() => {
       return !!(fullLead?.proximo_followup)
     })
   }
-  if (chatFilter.value === 'perdidos') {
+  if (chatFilter.value === 'reativacao') {
     chats = chats.filter(c => {
       const fullLead = c.lead.id ? leads.leads.find(l => l.id === c.lead.id) : null
-      return fullLead?.etapa === 'perdido'
+      return fullLead?.etapa === 'reativacao'
     })
   }
   if (chatFilter.value === 'relead') {
@@ -3202,6 +3265,13 @@ onUnmounted(() => {
 .sz-conta-hint { font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
 .sz-conta-footer { display: flex; align-items: center; gap: .5rem; padding: .75rem 1.5rem 1.25rem; border-top: 1px solid var(--border-subtle); }
 
+/* ── Modal reativação ── */
+.sz-reat-modal  { width: min(360px, 95vw); height: auto; }
+.sz-reat-body   { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: .75rem; }
+.sz-reat-name   { font-size: .9rem; font-weight: 600; color: var(--text-primary); margin-bottom: .15rem; }
+.sz-reat-hint   { font-size: .73rem; color: var(--text-secondary); line-height: 1.5; }
+.sz-reat-footer { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; padding: .75rem 1.5rem 1.25rem; border-top: 1px solid var(--border-subtle); }
+
 /* ── Bolha de mídia (imagem/vídeo edge-to-edge) ── */
 .sz-bubble--media {
   padding: 3px !important;
@@ -3344,6 +3414,28 @@ onUnmounted(() => {
   align-items: center;
   gap: .2rem;
 }
+
+/* ── Audio stub (histórico) ── */
+.sz-audio-stub {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .1rem .1rem;
+  opacity: .65;
+}
+.sz-audio-stub-icon {
+  flex-shrink: 0;
+}
+.sz-audio-stub--out .sz-audio-stub-icon { color: rgba(255,255,255,.8); }
+.sz-audio-stub--in  .sz-audio-stub-icon { color: var(--text-secondary); }
+.sz-audio-stub-label {
+  font-size: .72rem;
+  white-space: nowrap;
+}
+.sz-audio-stub--out .sz-audio-stub-label { color: rgba(255,255,255,.7); }
+.sz-audio-stub--in  .sz-audio-stub-label { color: var(--text-secondary); }
+[data-theme="light"] .sz-audio-stub--out .sz-audio-stub-icon,
+[data-theme="light"] .sz-audio-stub--out .sz-audio-stub-label { color: rgba(0,61,40,.65); }
 
 /* ── Lightbox ── */
 .sz-lightbox {

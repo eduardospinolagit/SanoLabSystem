@@ -91,7 +91,7 @@ export const useLeadsStore = defineStore('leads', () => {
     sb.from('leads').delete().eq('id', id).eq('user_id', uid()).then(() => {})
   }
 
-  const ETAPA_LABEL = { contato: 'Contato', interesse: 'Interesse', demo: 'Demo enviada', negociacao: 'Negociação', fechado: 'Fechado', perdido: 'Perdido' }
+  const ETAPA_LABEL = { contato: 'Contato', interesse: 'Interesse', demo: 'Demo enviada', negociacao: 'Negociação', fechado: 'Fechado', perdido: 'Perdido', reativacao: 'Reativação' }
   const PRI_LABEL   = { alta: 'Alta', media: 'Média', baixa: 'Baixa' }
 
   // ── Public (rastreia undo) ──

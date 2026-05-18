@@ -17,6 +17,10 @@
         <div class="sz-spinner"></div>
         <p class="sz-connecting-title">Aguardando servidor...</p>
         <p class="sz-connecting-hint">Certifique-se de que o app <strong>SLAC WhatsApp</strong> está rodando na bandeja do sistema</p>
+        <a href="/slac-server.zip" download class="sz-download-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar servidor SLAC WhatsApp
+        </a>
       </div>
     </div>
 
@@ -3219,6 +3223,25 @@ onUnmounted(() => {
   color: var(--text-secondary);
   max-width: 260px;
   line-height: 1.5;
+}
+.sz-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  margin-top: .75rem;
+  padding: .5rem 1rem;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.sz-download-btn:hover {
+  background: rgba(34, 197, 94, .15);
 }
 
 /* ── Sidebar title row ── */
